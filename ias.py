@@ -3,10 +3,10 @@
 
 from socket import *
 from style import *
+from ports import *
 import enum
 from argon2 import PasswordHasher  # python -m pip install argon2-cffi
 
-IAS_PORT = 1234
 IAS_BACKLOG_SIZE = 8
 IAS_MAX_USERNAME_LENGTH = 256
 IAS_MAX_PASSWORD_LENGTH = 256
@@ -20,6 +20,14 @@ class Response:
     WRONG_CREDENTIALS = b"1"
     USER_NOT_FOUND = b"2"
 
+
+class User:
+    def __init__(__self__, username, password_hash, name):
+        __self__.username = username
+        __self__.password_hash = password_hash
+        __self__.name = name
+
+
 def load_users(file_path):
     file = None
     try:
@@ -32,25 +40,19 @@ def load_users(file_path):
         username = fields[0]
         password_hash = fields[1]
         name = fields[2]
-        users.append(
-            {
-                "username": username,
-                "password_hash": password_hash,
-                "name": name
-            }
-        )
+        users.append(User(username, password_hash, name))
     file.close()
     return users
+
 
 def save_users(users, file_path):
     file = open(file_path, "w+")
     for user in users:
-        file.write(f"{user.get("username")}{IAS_DB_SEPARATOR}{user.get("password_hash")}{IAS_DB_SEPARATOR}{user.get("name")}\n")
+        file.write(f"{user.username}{IAS_USERS_DB_SEPARATOR}{user.password_hash}{IAS_USERS_DB_SEPARATOR}{user.name}\n")
     file.close()
 
 
 def main():
-    users = []
     users = load_users(IAS_USERS_DB_PATH)
     hasher = PasswordHasher()
 
@@ -66,11 +68,11 @@ def main():
         username, password = connection_socket.recv(
             IAS_MAX_USERNAME_LENGTH + IAS_MAX_PASSWORD_LENGTH + 1).decode().split(" ")
         matching_user = [
-            user for user in users if user.get("username") == username
+            user for user in users if user.username == username
         ]
         if matching_user:
             try:
-                hasher.verify(matching_user[0].get("password_hash"), password)
+                hasher.verify(matching_user[0].password_hash, password)
                 connection_socket.send(Response.LOGIN_SUCCESSFUL)
                 print(
                     f"{Style.blue("[INFO]")} Login bem-sucedido: usuário {Style.bold(username)} entrou do IP {Style.bold(client_address[0])}."
@@ -83,13 +85,7 @@ def main():
         else:
             connection_socket.send(Response.USER_NOT_FOUND)
             name = connection_socket.recv(IAS_MAX_NAME_LENGTH).decode()
-            users.append(
-                {
-                    "username": username,
-                    "password_hash": hasher.hash(password),
-                    "name": name
-                }
-            )
+            users.append(User(username, hasher.hash(password), name))
 
             save_users(users, IAS_USERS_DB_PATH)  # rewrites the whole thing
 

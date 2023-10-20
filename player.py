@@ -3,10 +3,8 @@
 
 from socket import *
 from style import *
+from ports import *
 import sys
-
-
-IAS_PORT = 1234
 
 
 def authenticate(username: str, password_hash: str, name: str = None):

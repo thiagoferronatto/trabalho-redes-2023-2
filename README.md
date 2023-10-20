@@ -16,8 +16,6 @@ trabalho-redes-2023-2$ python ias.py &
 trabalho-redes-2023-2$ python player.py meu_username minha_senha
 ```
 
-### Justificativa para a Argon2
+### Justificativa para as bibliotecas
 
-Armazenar senhas é um negócio complicado; para que reinventar a roda quando
-pessoas incríveis já a fazem girar com tanta perfeição? É aí que entra essa
-biblioteca.
+- **Argon2**: Armazenamento de senhas.
