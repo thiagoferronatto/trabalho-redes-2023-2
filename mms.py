@@ -87,7 +87,7 @@ def main():
 
             print(LogMessage.match_ready(matchmaking_queue[0][0], matchmaking_queue[1][0]))
             opsep = str(MmsResponse.MATCH_READY) + MMS_RESPONSE_CODE_ARGS_SEP
-            msg = opsep + p2_addr[0] + " " + str(p2_addr[1])
+            msg = opsep + p2_addr[0] + " " + str(p2_addr[1]) + " " + str(p1_addr[1])
             p1_socket.sendto(msg.encode(), p1_addr)
             msg = opsep + p1_addr[0] + " " + str(p1_addr[1])
             p2_socket.sendto(msg.encode(), p2_addr)

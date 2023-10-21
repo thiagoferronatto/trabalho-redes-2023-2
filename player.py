@@ -146,13 +146,15 @@ def main():
         response = int(response.decode())
 
         answer = None
-        ip, port = None, None
+        ip, port, server_port = None, None, None
         if response == MmsResponse.MATCH_AVAILABLE:
             answer = input(LogMessage.accept_match())
             if answer == "s":
                 matchmaking_socket.sendto(str(MmsOpCode.ACCEPT_MATCH).encode(), addr)
                 response = (
-                    matchmaking_socket.recv(MMS_RESPONSE_CODE_SIZE + 15 * 2 + 5 * 2)
+                    matchmaking_socket.recv(
+                        MMS_RESPONSE_CODE_SIZE + 15 * 2 + 5 * 4 + 2  # dont even ask
+                    )
                     .decode()
                     .split(MMS_RESPONSE_CODE_ARGS_SEP)
                 )
@@ -160,16 +162,18 @@ def main():
                 respcode = int(response[0])
 
                 if respcode == MmsResponse.MATCH_READY:
-                    ip, port = response[1].split(" ")
-                    port = int(port)
+                    args = response[1].split(" ")
+                    ip, port = args[0], int(args[1])
+                    if len(args) == 3:
+                        server_port = int(args[2])
                     in_queue = False
                 elif respcode == MmsResponse.OTHER_PLAYER_DECLINED:
                     print(LogMessage.match_declined_by_another())
                     print(LogMessage.looking_for_match())
                 else:
                     print(LogMessage.matchmaking_error())
-                    logout(token, username)
                     matchmaking_socket.close()
+                    logout(token, username)
                     exit(1)
             elif answer == "n":
                 matchmaking_socket.sendto(str(MmsOpCode.DECLINE_MATCH).encode(), addr)
@@ -182,25 +186,43 @@ def main():
                 else:
                     print(LogMessage.matchmaking_error())
                     matchmaking_socket.close()
+                    logout(token, username)
                     exit(1)
             else:
                 print(LogMessage.invalid_answer())
-                logout(token, username)
                 matchmaking_socket.close()
+                logout(token, username)
                 exit(1)
         else:
             print(LogMessage.matchmaking_error())
-            logout(token, username)
             matchmaking_socket.close()
+            logout(token, username)
             exit(1)
+
+    matchmaking_socket.close()
 
     print(f"other player @ {ip}:{port}")
 
-    # TODO: implement game logic, communicate through matchmaking_socket
+    if server_port:  # you are the server (player 1)
+        server_socket = socket(AF_INET, SOCK_STREAM)
+        server_socket.bind(("", server_port))
+        server_socket.listen(1)
+        game_socket, other_player_addr = server_socket.accept()
 
-    logout(token, username)
+        # TODO: communicate with player 2 through game_socket
+        msg = game_socket.recv(1024).decode()
+        print(msg)
 
-    matchmaking_socket.close()
+        game_socket.close()
+        server_socket.close()
+    else:  # the other player is the server (you are player 2)
+        game_socket = socket()
+        game_socket.connect((ip, port))
+
+        # TODO: communicate with player 1 through game_socket
+        game_socket.send("asdf".encode())
+
+        game_socket.close()
 
 
 if __name__ == "__main__":
