@@ -9,13 +9,13 @@ import sys
 
 class LogMessage:
     def bad_usage():
-        return f"{Style.fail("[ERRO]")} Uso: python player.py <nome de usuário> <senha> [<nome>]"
+        return f"{Style.fail('[ERRO]')} Uso: python player.py <nome de usuário> <senha> [<nome>]"
 
     def incorrect_credentials(username):
-        return f"{Style.fail("[ERRO]")} Credenciais incorretas para o usuário {Style.bold(username)}."
+        return f"{Style.fail('[ERRO]')} Credenciais incorretas para o usuário {Style.bold(username)}."
 
     def user_already_exists(username):
-        return f"{Style.fail("[ERRO]")} Usuário {Style.bold(username)} já existe."
+        return f"{Style.fail('[ERRO]')} Usuário {Style.bold(username)} já existe."
 
 
 def authenticate(username, password):
