@@ -126,13 +126,15 @@ def main():
 
     if response == MmsResponse.USER_NOT_AUTHENTICATED:
         print(LogMessage.auth_failed(username))
-        exit(1)
         matchmaking_socket.close()
+        logout(token, username)
+        exit(1)
     elif response == MmsResponse.IN_QUEUE:
         print(LogMessage.looking_for_match())
     else:
         print(LogMessage.matchmaking_error())
         matchmaking_socket.close()
+        logout(token, username)
         exit(1)
 
     # I apologize in advance for how awful this next section is.
