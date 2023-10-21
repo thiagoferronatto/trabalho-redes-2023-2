@@ -1,97 +1,164 @@
 # Information and Authentication Server
 
 
-from socket import *
-from style import *
-from ports import *
-import enum
-from argon2 import PasswordHasher  # python -m pip install argon2-cffi
+from ias_interface_data import *
+from socket             import *
+from argon2             import PasswordHasher  # python -m pip install argon2-cffi
+from style              import *
 
-IAS_BACKLOG_SIZE = 8
+import secrets
+import enum
+
+
 IAS_MAX_USERNAME_LENGTH = 256
 IAS_MAX_PASSWORD_LENGTH = 256
-IAS_MAX_NAME_LENGTH = 1024
-IAS_USERS_DB_PATH = "users.db"
-IAS_USERS_DB_SEPARATOR = "|||"
+IAS_MAX_NAME_LENGTH     = 1024
+IAS_BACKLOG_SIZE        = 8
 
-
-class Response:
-    LOGIN_SUCCESSFUL = b"0"
-    WRONG_CREDENTIALS = b"1"
-    USER_NOT_FOUND = b"2"
+IAS_USERS_DB_PATH       = "users.db"
+IAS_USERS_DB_SEP        = "|||"
 
 
 class User:
     def __init__(__self__, username, password_hash, name):
-        __self__.username = username
+        __self__.username      = username
         __self__.password_hash = password_hash
-        __self__.name = name
+        __self__.name          = name
 
 
-def load_users(file_path):
+class LogMessage:
+    def server_listening():
+        return f"{Style.blue("[INFO]")} Servidor escutando na porta {Style.bold(IAS_PORT)} por requisições."
+
+    def login_successful(username):
+        return f"{Style.blue("[INFO]")} Login bem-sucedido: usuário {Style.bold(username)} entrou."
+
+    def wrong_credentials(username):
+        return f"{Style.warn("[WARNING]")} Login falhou: Credenciais inválidas para {Style.bold(username)}."
+
+    def no_such_user(username):
+        return f"{Style.warn("[WARNING]")} Login falhou: Usuário {Style.bold(username)} não existe."
+
+    def user_already_logged(username):
+        return f"{Style.warn("[WARNING]")} Login falhou: Tentativa de relogar o usuário {Style.bold(username)}."
+
+    def registration_successful(username):
+        return f"{Style.blue("[INFO]")} Cadastro bem-sucedido: Usuário {Style.bold(username)} cadastrado."
+
+    def user_already_exists(username):
+        return f"{Style.warn("[WARNING]")} Cadastro falhou: Tentativa de recadastrar o usuário {Style.bold(username)}."
+
+
+def load_users() -> list[str]:
     file = None
     try:
-        file = open(file_path, "r")
+        file = open(IAS_USERS_DB_PATH, "r")
     except:
         return []
     users = []
     while line := " ".join(file.readline().split()):
-        fields = line.split(IAS_USERS_DB_SEPARATOR)
-        username = fields[0]
-        password_hash = fields[1]
-        name = fields[2]
+        username, password_hash, name = line.split(IAS_USERS_DB_SEP)
         users.append(User(username, password_hash, name))
     file.close()
     return users
 
 
-def save_users(users, file_path):
-    file = open(file_path, "w+")
-    for user in users:
-        file.write(f"{user.username}{IAS_USERS_DB_SEPARATOR}{user.password_hash}{IAS_USERS_DB_SEPARATOR}{user.name}\n")
+def save_users():
+    file = open(IAS_USERS_DB_PATH, "w+")
+    for user in registered_users:
+        file.write(f"{user.username}{IAS_USERS_DB_SEP}{user.password_hash}{IAS_USERS_DB_SEP}{user.name}\n")
     file.close()
 
 
-def main():
-    users = load_users(IAS_USERS_DB_PATH)
-    hasher = PasswordHasher()
+def token(username):
+    auth_token = secrets.token_hex(IAS_AUTH_TOKEN_SIZE)
+    logged_users[auth_token] = username
+    return auth_token
 
+
+def authenticate(username, password):
+    matching_user = [
+        user for user in registered_users if user.username == username
+    ]
+    if not matching_user:
+        print(LogMessage.no_such_user(username))
+        return None
+    try:
+        hasher.verify(matching_user[0].password_hash, password)
+        if username in logged_users.values():
+            print(LogMessage.user_already_logged(username))
+            return None
+        print(LogMessage.login_successful(username))
+        return token(username)
+    except:  # hasher throws a tantrum if the password is wrong
+        print(LogMessage.wrong_credentials(username))
+        return None
+
+
+def auth_response(username, password):
+    if tk := authenticate(username, password):
+        return str(Response.LOGIN_SUCCESSFUL) + " " + tk
+    return str(Response.LOGIN_FAILED)
+
+
+def register(username, password_hash, name):
+    matching_user = [
+        user for user in registered_users if user.username == username
+    ]
+    if matching_user:
+        print(LogMessage.user_already_exists(username))
+        return Response.USER_ALREADY_EXISTS
+    registered_users.append(User(username, password_hash, name))
+    save_users()  # rewrites the whole thing
+    print(LogMessage.registration_successful(username))
+    return Response.REGISTRATION_SUCCESSFUL
+
+
+def verify(token, usename):
+    if logged_users[token] == username:
+        return Response.VERIFICATION_SUCCESSFUL
+    return Response.VERIFICATION_FAILED
+
+
+registered_users = load_users()
+logged_users     = {}
+hasher           = PasswordHasher()
+
+
+def main():
     server_socket = socket(AF_INET, SOCK_STREAM)
     server_socket.bind(("", IAS_PORT))
     server_socket.listen(IAS_BACKLOG_SIZE)
-    print(
-        f"{Style.blue("[INFO]")} Servidor escutando na porta {Style.bold(IAS_PORT)} por requisições."
-    )
+
+    print(LogMessage.server_listening())
 
     while True:
         connection_socket, client_address = server_socket.accept()
-        username, password = connection_socket.recv(
-            IAS_MAX_USERNAME_LENGTH + IAS_MAX_PASSWORD_LENGTH + 1).decode().split(" ")
-        matching_user = [
-            user for user in users if user.username == username
-        ]
-        if matching_user:
-            try:
-                hasher.verify(matching_user[0].password_hash, password)
-                connection_socket.send(Response.LOGIN_SUCCESSFUL)
-                print(
-                    f"{Style.blue("[INFO]")} Login bem-sucedido: usuário {Style.bold(username)} entrou do IP {Style.bold(client_address[0])}."
-                )
-            except: # hasher throws a tantrum if password is wrong
-                connection_socket.send(Response.WRONG_CREDENTIALS)
-                print(
-                    f"{Style.warn("[WARNING]")} Autenticação falhou: Credenciais inválidas para {Style.bold(username)} do IP {Style.bold(client_address[0])}."
-                )
-        else:
-            connection_socket.send(Response.USER_NOT_FOUND)
-            name = connection_socket.recv(IAS_MAX_NAME_LENGTH).decode()
-            users.append(User(username, hasher.hash(password), name))
+        buflen = IAS_OPCODE_SIZE + IAS_MAX_USERNAME_LENGTH
+        buflen += IAS_MAX_PASSWORD_LENGTH + IAS_MAX_NAME_LENGTH
+        op_and_args = connection_socket.recv(buflen).decode().split(IAS_OPCODE_ARGS_SEP)
+        opcode = op_and_args[0]
+        args = None
+        if len(op_and_args) > 1:
+            args = op_and_args[1]
 
-            save_users(users, IAS_USERS_DB_PATH)  # rewrites the whole thing
+        opcode = int(opcode)
 
-            print(
-                f"{Style.blue("[INFO]")} Cadastro: Usuário {Style.bold(username)} cadastrado do IP {Style.bold(client_address[0])}."
-            )
+        if opcode == OpCode.AUTHENTICATE:
+            username, password = args.split(" ")
+            connection_socket.send(auth_response(username, password).encode())
+        elif opcode == OpCode.REGISTER:
+            username, password, name = args.split(" ")
+            status = register(username, hasher.hash(password), name)
+            if status == Response.REGISTRATION_SUCCESSFUL:
+                connection_socket.send(auth_response(username, password).encode())
+            else:
+                connection_socket.send(str(status).encode())
+        elif opcode == OpCode.VERIFY:
+            token, username = args.split(" ")
+            status = verify(token, username)
+            connection_socket.send(str(status).encode())
+
         connection_socket.close()
 
 
