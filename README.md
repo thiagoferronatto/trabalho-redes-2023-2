@@ -43,6 +43,11 @@ Representa um cliente. Após criar uma conta e autenticar-se no IAS, um cliente 
 
 Contém funções que encapsulam -- e consequentemente facilitam -- o uso de textos coloridos em janelas de terminal. São extensivamente utilizadas para _logging_ de informações em ambos os lados das conexões.
 
+### `game.py`
+
+Possui o aplicativo que representa o jogo em si. Ele carrega os dados presentes em pokedex.json para a simulação das batalhas Pokémon e executa a simulação de batalha de acordo com a fórmula utilizada nos jogos reais.
+
 ## Justificativa para as bibliotecas
 
 - **Argon2**: Armazenamento de senhas.
+- **Raylib**: Criação de janela e manipulação de efeitos audiovisuais
