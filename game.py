@@ -1,9 +1,10 @@
-import pyray as ray
+#import pyray as ray
 import os
 import json
 from enum import Enum
 import random
 import copy
+from threading import Thread
 
 type_effectiveness = {
   "Normal": {"Rock": 0.5, "Ghost": 0, "Steel": 0.5},
@@ -27,34 +28,76 @@ type_effectiveness = {
 }
 
 class GameState():
-  def __init__(self):
+  def __init__(self, objects):
+    self.pokedex = objects
     self.player = [{"pokemon": {}}, {"pokemon": {}}]
     self.player[0]["pokemon"] = []
     self.player[1]["pokemon"] = []
   def push_pokemon(self, player_id, pokemon_data):
-    self.player[player_id].push(pokemon_data)
+    self.player[player_id]["pokemon"].append(pokemon_data)
+  def remove_pokemon(self, player_id, pokemon_id):
+    for index, pokemon in enumerate(self.player[player_id]["pokemon"]):
+      if pokemon["id"] == pokemon_id:
+        del self.player[player_id]["pokemon"][index]
+  def get_pokemon_by_id(self, pokemon_id):
+    for index, pokemon in enumerate(self.pokedex):
+      if pokemon["id"] == pokemon_id:
+        return pokemon
+  def get_pokemon_by_name(self, pokemon_name):
+    for index, pokemon in enumerate(self.pokedex):
+        current_name = str(pokemon["name"]["english"]).lower()
+        pokemon_name = str(pokemon_name).lower()
+        if current_name == pokemon_name:
+          return pokemon
+        
+  def simulate_battle(self):
+    player_a = self.player[0]
+    player_b = self.player[1]
+    pokemons = [player_a["pokemon"], player_b["pokemon"]]
 
-class PokemonTypes(Enum):
-  FIRE = 1
-  WATER = 2
-  GRASS = 3
+    hps = []
+    hps.append(pokemons[0][0]['base']['HP'])
+    hps.append(pokemons[1][0]['base']['HP'])
 
-def load_objects():
-  with open('pokedex.json', 'r') as f:
-    objects = json.loads(f.read())
-  sprite_list = os.listdir('sprites')
-  #print(f"sprite list: {sprite_list}")
+    turn = 0
+    while len(pokemons[0]) > 0 and len(pokemons[1]) > 0:
+      print(f"Currently battling pokemon: {pokemons[0][0]['name']['english']} and {pokemons[1][0]['name']['english']}")
+      while hps[0] > 0 and hps[1] > 0:
+        pokemon_to_attack = pokemons[0][0] if turn == 0 else pokemons[1][0]
+        pokemon_to_be_attacked = pokemons[1][0] if turn == 0 else pokemons[0][0]
+        
+        current_damage = calculate_damage(pokemon_to_attack, pokemon_to_be_attacked)
+        print(f"{pokemon_to_attack['name']['english']} caused {current_damage} to {pokemon_to_be_attacked['name']['english']}")
+        turn = 0 if turn == 1 else 1
+        hps[turn] -= current_damage
+      for i in range(0,2):
+        if hps[i] < 0:
+          print(f"{pokemons[i][0]['name']['english']} was defeated!")
+          del pokemons[i][0]
+          if len(pokemons[i]) > 0:
+            hps[i] = pokemons[i][0]['base']['HP']
+    for i in range(0,2):
+      if len(pokemons[i]) > 0:
+        print(f"Trainer {i} won!")
+        
+'''
+def load_textures(objects):
   for o in objects:
     o["back_texture"] = ray.load_texture(o["sprites"]["back"])
     o["front_texture"] = ray.load_texture(o["sprites"]["front"])
     if o["back_texture"].width == 0 or o["front_texture"].width == 0:
       raise RuntimeError("Texture could not be loaded")
-  return objects
-
-def load_pokedex():
-  with open('new_pokedex.json', 'r', encoding="utf8") as f:
+'''
+      
+def load_objects(result):
+  with open('pokedex.json', 'r') as f:
     objects = json.loads(f.read())
-  print(f"{objects}")
+  sprite_list = os.listdir('sprites')
+  #print(f"sprite list: {sprite_list}")
+  #load_textures(objects)
+  if len(objects) > 0:
+    result = True
+  return objects
 
 def calculate_type_effectiveness(pokemon_a_types, pokemon_b_types):
   result = 1.0
@@ -78,61 +121,11 @@ def calculate_damage(pokemon_a, pokemon_b):
   damage = upper_part * outer_part
   return damage
 
-def simulate_battle(pokemons_to_simulate):
-  pokemon_a = pokemons_to_simulate[0]
-  pokemon_b = pokemons_to_simulate[1]
-  hps = [pokemon_a['base']['HP'], pokemon_b['base']['HP']]
+'''
+def draw_loading_screen():
+  ray.draw_text("LOADING...", int(1280 / 2) - 40, int(720 / 2) - 40, 40, ray.BLACK)
 
-  turn = 0
-  while hps[0] > 0 and hps[1] > 0:
-    pokemon_to_attack = pokemon_a if turn == 0 else pokemon_b
-    pokemon_to_be_attacked = pokemon_b if turn == 0 else pokemon_a
-    
-    current_damage = calculate_damage(pokemon_to_attack, pokemon_to_be_attacked)
-    print(f"{pokemon_to_attack['name']} caused {current_damage} to {pokemon_to_be_attacked['name']}")
-    hps[turn] -= current_damage
-    turn = 0 if turn == 1 else 1
-  for i in range(0,1):
-    if hps[i] < 0:
-      print(f"{pokemons_to_simulate[i]['name']} won!")
-
-# The default pokemon for now will be: charmander, bulbasaur and squirtle, for both players.
-game_state = GameState()
-
-ray.init_window(1280, 720, "PokeRedes")
-ray.set_target_fps(60)
-
-try:
-  objects = load_objects()
-except RuntimeError as e:
- print(f"{e}")
- exit(1)
-
-pokemon_a_value = random.randint(1, 151)
-pokemon_b_value = random.randint(1, 151)
-
-pokemon_a = {
-  'name': objects[pokemon_a_value]['name']['english'],
-  'type': objects[pokemon_a_value]['type'],
-  'base': objects[pokemon_a_value]['base']
-}
-pokemon_b = {
-  'name': objects[pokemon_b_value]['name']['english'],
-  'type': objects[pokemon_b_value]['type'],
-  'base': objects[pokemon_b_value]['base']
-}
-pokemons_to_simulate = [pokemon_a, pokemon_b]
-simulate_battle(pokemons_to_simulate)
-
-print(f"Pokemon A: {pokemons_to_simulate[0]}")
-print(f"Pokemon B: {pokemons_to_simulate[1]}")
-
-#print(f"objects: {objects}")
-
-while not ray.window_should_close():
-  ray.begin_drawing()
-  ray.clear_background(ray.RAYWHITE)
-
+def draw_game(objects):
   x = 0
   y = 30
   for o in objects:
@@ -144,6 +137,40 @@ while not ray.window_should_close():
     if x > 1280:
       y += 64
       x = 0
+'''
+      
+# The default pokemon for now will be: charmander, bulbasaur and squirtle, for both players.
+
+objects_loaded = False
+
+#ray.init_window(1280, 720, "PokeRedes")
+#ray.set_target_fps(60)
+
+objects = load_objects(objects_loaded)
+
+game_state = GameState(objects)
+game_state.push_pokemon(0, game_state.get_pokemon_by_name("bulbasaur"))
+game_state.push_pokemon(0, game_state.get_pokemon_by_name("charmander"))
+game_state.push_pokemon(0, game_state.get_pokemon_by_name("squirtle"))
+
+game_state.push_pokemon(1, game_state.get_pokemon_by_name("squirtle"))
+game_state.push_pokemon(1, game_state.get_pokemon_by_name("bulbasaur"))
+game_state.push_pokemon(1, game_state.get_pokemon_by_name("charmander"))
+
+battle_thread = Thread(target=game_state.simulate_battle)
+#game_state.simulate_battle()
+battle_thread.start()
+
+#print(f"objects: {objects}")
+
+'''
+while not ray.window_should_close():
+  ray.begin_drawing()
+  ray.clear_background(ray.RAYWHITE)
+
+  draw_game(objects)
+  
 
   ray.draw_fps(ray.get_render_width() - 30, 10) 
   ray.end_drawing()
+'''
