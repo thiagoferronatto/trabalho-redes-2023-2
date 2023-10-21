@@ -11,26 +11,26 @@ class LogMessage:
     def bad_usage():
         return f"{Style.fail("[ERRO]")} Uso: python player.py <nome de usuário> <senha> [<nome>]"
 
-    def incorrect_credentials():
-        return f"{Style.fail("[ERRO]")} Credenciais incorretas."
+    def incorrect_credentials(username):
+        return f"{Style.fail("[ERRO]")} Credenciais incorretas para o usuário {Style.bold(username)}."
 
-    def user_already_exists():
+    def user_already_exists(username):
         return f"{Style.fail("[ERRO]")} Usuário {Style.bold(username)} já existe."
 
 
 def authenticate(username, password):
     auth_socket = socket()
-    auth_socket.connect(("127.0.0.1", IAS_PORT))
-    msg = str(OpCode.AUTHENTICATE) + IAS_OPCODE_ARGS_SEP + username + " " + password
+    auth_socket.connect((IAS_ADDRESS, IAS_PORT))
+    msg = str(IasOpCode.AUTHENTICATE) + IAS_OPCODE_ARGS_SEP + username + " " + password
     auth_socket.send(msg.encode())
     buflen = IAS_OPCODE_SIZE + IAS_AUTH_TOKEN_HEX_STR_LENGTH + 1
     response = auth_socket.recv(buflen).decode().split(" ")
     status = int(response[0])
     token = None
-    if status == Response.LOGIN_SUCCESSFUL:
+    if status == IasResponse.LOGIN_SUCCESSFUL:
         token = response[1]
     else:
-        print(LogMessage.incorrect_credentials())
+        print(LogMessage.incorrect_credentials(username))
         exit(1)
     auth_socket.close()
     return token
@@ -39,14 +39,14 @@ def authenticate(username, password):
 def register(username, password, name):
     auth_socket = socket()
     auth_socket.connect((IAS_ADDRESS, IAS_PORT))
-    msg = str(OpCode.REGISTER) + IAS_OPCODE_ARGS_SEP + username + " " + password
+    msg = str(IasOpCode.REGISTER) + IAS_OPCODE_ARGS_SEP + username + " " + password
     msg += " " + name
     auth_socket.send(msg.encode())
     buflen = IAS_OPCODE_SIZE + IAS_AUTH_TOKEN_HEX_STR_LENGTH + 1
     response = auth_socket.recv(buflen).decode().split(" ")
     status = int(response[0])
     token = None
-    if status == Response.LOGIN_SUCCESSFUL:
+    if status == IasResponse.LOGIN_SUCCESSFUL:
         token = response[1]
     else:
         print(LogMessage.user_already_exists(username))

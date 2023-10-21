@@ -49,7 +49,7 @@ class LogMessage:
         return f"{Style.warn("[WARNING]")} Cadastro falhou: Tentativa de recadastrar o usuário {Style.bold(username)}."
 
 
-def load_users() -> list[str]:
+def load_users():
     file = None
     try:
         file = open(IAS_USERS_DB_PATH, "r")
@@ -97,8 +97,8 @@ def authenticate(username, password):
 
 def auth_response(username, password):
     if tk := authenticate(username, password):
-        return str(Response.LOGIN_SUCCESSFUL) + " " + tk
-    return str(Response.LOGIN_FAILED)
+        return str(IasResponse.LOGIN_SUCCESSFUL) + " " + tk
+    return str(IasResponse.LOGIN_FAILED)
 
 
 def register(username, password_hash, name):
@@ -107,17 +107,17 @@ def register(username, password_hash, name):
     ]
     if matching_user:
         print(LogMessage.user_already_exists(username))
-        return Response.USER_ALREADY_EXISTS
+        return IasResponse.USER_ALREADY_EXISTS
     registered_users.append(User(username, password_hash, name))
     save_users()  # rewrites the whole thing
     print(LogMessage.registration_successful(username))
-    return Response.REGISTRATION_SUCCESSFUL
+    return IasResponse.REGISTRATION_SUCCESSFUL
 
 
 def verify(token, usename):
     if logged_users[token] == username:
-        return Response.VERIFICATION_SUCCESSFUL
-    return Response.VERIFICATION_FAILED
+        return IasResponse.VERIFICATION_SUCCESSFUL
+    return IasResponse.VERIFICATION_FAILED
 
 
 registered_users = load_users()
@@ -134,7 +134,7 @@ def main():
 
     while True:
         connection_socket, client_address = server_socket.accept()
-        buflen = IAS_OPCODE_SIZE + IAS_MAX_USERNAME_LENGTH
+        buflen = IAS_OPCODE_SIZE + IAS_MAX_USERNAME_LENGTH + len(IAS_OPCODE_ARGS_SEP)
         buflen += IAS_MAX_PASSWORD_LENGTH + IAS_MAX_NAME_LENGTH
         op_and_args = connection_socket.recv(buflen).decode().split(IAS_OPCODE_ARGS_SEP)
         opcode = op_and_args[0]
@@ -144,17 +144,17 @@ def main():
 
         opcode = int(opcode)
 
-        if opcode == OpCode.AUTHENTICATE:
+        if opcode == IasOpCode.AUTHENTICATE:  # args are username and password
             username, password = args.split(" ")
             connection_socket.send(auth_response(username, password).encode())
-        elif opcode == OpCode.REGISTER:
+        elif opcode == IasOpCode.REGISTER:  # args are username, password and name
             username, password, name = args.split(" ")
             status = register(username, hasher.hash(password), name)
-            if status == Response.REGISTRATION_SUCCESSFUL:
+            if status == IasResponse.REGISTRATION_SUCCESSFUL:
                 connection_socket.send(auth_response(username, password).encode())
             else:
                 connection_socket.send(str(status).encode())
-        elif opcode == OpCode.VERIFY:
+        elif opcode == IasOpCode.VERIFY:  # args are token and username
             token, username = args.split(" ")
             status = verify(token, username)
             connection_socket.send(str(status).encode())

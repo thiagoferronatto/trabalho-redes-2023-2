@@ -1,4 +1,21 @@
 # Data about the boundary of the matchmaking server
 
+
 MATCHMAKING_ADDRESS = "127.0.0.1"
 MATCHMAKING_PORT = 1235
+
+MMS_OPCODE_SIZE = 8
+MMS_OPCODE_ARGS_SEP = "|||"
+MMS_MAX_ARGS_SIZE = 1024
+
+
+class MmsOpCode:
+    MAKE_AVAILABLE = 0
+    MAKE_UNAVAILABLE = 1
+    ACCEPT_MATCH = 2
+    DECLINE_MATCH = 3
+
+
+class MmsResponse:
+    MATCH_AVAILABLE = 0
+    USER_NOT_AUTHENTICATED = 1
