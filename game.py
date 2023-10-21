@@ -6,6 +6,8 @@ import random
 import copy
 from threading import Thread
 
+from pprint import pprint
+
 type_effectiveness = {
   "Normal": {"Rock": 0.5, "Ghost": 0, "Steel": 0.5},
   "Fire": {"Fire": 0.5, "Water": 0.5, "Grass": 2, "Ice": 2, "Bug": 2, "Rock": 0.5, "Dragon": 0.5, "Steel": 2},
@@ -53,6 +55,10 @@ class GameState():
   def simulate_battle(self):
     player_a = self.player[0]
     player_b = self.player[1]
+    
+    if len(player_a) == 0 or len(player_b) == 0:
+      print(f"One of the parties is empty! :(")
+      return
     pokemons = [player_a["pokemon"], player_b["pokemon"]]
 
     hps = []
@@ -138,7 +144,140 @@ def draw_game(objects):
       y += 64
       x = 0
 '''
+
+# Função para adicionar um Pokémon individual (ETAPA 1)
+def adicionar_pokemon_individual(game_state: GameState):
+  print("Digite o id ou nome do Pokémon:")
+  pokemon_id = input()
+  # Implemente a lógica para adicionar o Pokémon
+  if pokemon_id.isdigit():
+    pokemon = game_state.get_pokemon_by_id(int(pokemon_id))
+  elif pokemon_id == None:
+    print(f'Digite o um valor válido!')
+    return 1
+  else:
+    pokemon = game_state.get_pokemon_by_name(pokemon_id)
+  
+  print(f"O Pokémon que você escolheu é {pokemon}, confirma? [s/n]")
+  resposta = input()
+  if resposta.lower() == "s":
+    game_state.push_pokemon(0, pokemon)
+    return 0  # Retorna à etapa 0
+  else:
+    return 1  # Volta à etapa 1
+
+def print_poke(poke):
+  print(f"Pokemon ID: {poke['id']}")
+  print(f"Pokemon name: {poke['name']['english']}")
+  print(f"Pokemon stats:")
+  for stat, value in poke['base'].items():
+    print(f"\t{stat}: {value}")
+  print("Types:")
+  for type in poke['type']:
+    print(f"\t{type}")
+  print("==========================================")
+
+def print_party(party):
+  for poke in party:
+    print_poke(poke)
+
+def translate_party_to_pokemon_data(game_state: GameState, party):
+  result = []
+  for p in party:
+    result.append(game_state.get_pokemon_by_id(int(p)))
+  return result
+
+# Função para adicionar uma party inteira (ETAPA 2)
+def adicionar_party(game_state: GameState):
+  print("Digite os ids dos 6 Pokémon:")
+  ids_pokemons = input().split()
+  
+  todos_sao_digitos = all(item.isdigit() for item in ids_pokemons)
+  
+  if len(ids_pokemons) != 6 or not todos_sao_digitos:
+    return 2
+  
+  party = translate_party_to_pokemon_data(game_state, ids_pokemons)
+  print(f"Os Pokémon que você selecionou são:")
+  print_party(party)
+  #pprint(party)
+  print(f"Deseja refazer? [s/n]")
+  resposta = input()
+  if resposta.lower() == "s":
+    return 2  # Retorna à etapa 2
+  else:
+    game_state.player[0]['pokemon'] = party
+    return 0  # Volta à etapa 0
+
+# Função para listar todos os Pokémon (ETAPA 3)
+def listar_pokemon():
+  # Implemente a lógica para listar todos os Pokémon
+  return 0  # Volta à etapa 0
+
+# Função para consultar dados de um Pokémon específico (ETAPA 4)
+def consultar_pokemon():
+  print("Digite o id ou nome do Pokémon:")
+  id_ou_nome = input()
+  # Implemente a lógica para consultar os dados do Pokémon
+  print(f"O Pokémon é o: [dados_do_pokemon]")
+  return 0  # Volta à etapa 0
+
+# Função principal
+def menu(game_state: GameState):
+  etapa = 0  # Inicia na etapa 0
+
+  previous_party_size = 0
+  party_full = False
+  while True:
+    current_party_size = len(game_state.player[0]['pokemon'])
+    if current_party_size != previous_party_size:
+      print(f"Sua party é a seguinte: ")
+      print_party(game_state.player[0]["pokemon"])
+      previous_party_size = current_party_size
       
+    if current_party_size == 6 and not party_full:
+      print(f"Os 6 pokemons foram adicionados!")
+      party_full = True
+    
+    if etapa == 0:
+      if not party_full:
+        print("1 - Adicionar Pokémon individual")
+        print("2 - Adicionar party inteira")
+      print("3 - Consultar Pokémon")
+      print("4 - Consultar dados de Pokémon específico")
+      print("5 - Sair")
+      opcao = input("Selecione uma opção: ")
+
+      # TODO: O código está duplicado. Poderia ser mais bonito, mas por enquanto funciona hehe
+
+      if opcao == "1" and not party_full:
+        etapa = adicionar_pokemon_individual(game_state)
+      elif opcao == "2" and not party_full:
+        etapa = adicionar_party(game_state)
+      elif opcao == "3":
+        etapa = listar_pokemon()
+      elif opcao == "4":
+        etapa = consultar_pokemon()
+      elif opcao == "5":
+         etapa = 5
+
+    elif etapa == 1:
+        etapa = adicionar_pokemon_individual(game_state)
+
+    elif etapa == 2:
+        etapa = adicionar_party(game_state)
+
+    elif etapa == 3:
+        etapa = listar_pokemon()
+
+    elif etapa == 4:
+        etapa = consultar_pokemon()
+    elif etapa == 5:
+       break
+    
+
+
+
 # The default pokemon for now will be: charmander, bulbasaur and squirtle, for both players.
 
 objects_loaded = False
@@ -149,13 +288,24 @@ objects_loaded = False
 objects = load_objects(objects_loaded)
 
 game_state = GameState(objects)
+
+print(f"Bem-vindo ao PokéRedes!")
+print(f"Crie sua party, ela deve ter no mínimo 1 pokémon e no máximo 6!")
+# Inicie o menu
+menu(game_state)
+
+'''
 game_state.push_pokemon(0, game_state.get_pokemon_by_name("bulbasaur"))
 game_state.push_pokemon(0, game_state.get_pokemon_by_name("charmander"))
 game_state.push_pokemon(0, game_state.get_pokemon_by_name("squirtle"))
+'''
 
-game_state.push_pokemon(1, game_state.get_pokemon_by_name("squirtle"))
-game_state.push_pokemon(1, game_state.get_pokemon_by_name("bulbasaur"))
-game_state.push_pokemon(1, game_state.get_pokemon_by_name("charmander"))
+# ALERTA: O segundo jogador, por enquanto, será um jogador com party hipotética, a partir do momento que implementarmos os sockets, a party será transmitida pelo adversário
+# até a porta que o jogador cliente estará ouvindo. Após as partys estiverem bem definidas, o jogo começará.
+
+game_state.push_pokemon(1, game_state.get_pokemon_by_name("dragonite"))
+game_state.push_pokemon(1, game_state.get_pokemon_by_name("mew"))
+game_state.push_pokemon(1, game_state.get_pokemon_by_name("mewtwo"))
 
 battle_thread = Thread(target=game_state.simulate_battle)
 #game_state.simulate_battle()
