@@ -28,25 +28,37 @@ class User:
 
 class LogMessage:
     def server_listening():
-        return f"{Style.blue("[INFO]")} Servidor escutando na porta {Style.bold(IAS_PORT)} por requisições."
+        return f"{Style.blue("[INFO]")} Servidor escutando pela porta {Style.bold(IAS_PORT)}."
 
     def login_successful(username):
         return f"{Style.blue("[INFO]")} Login bem-sucedido: usuário {Style.bold(username)} entrou."
 
     def wrong_credentials(username):
-        return f"{Style.warn("[WARNING]")} Login falhou: Credenciais inválidas para {Style.bold(username)}."
+        return f"{Style.warn("[AVISO]")} Login falhou: Credenciais inválidas para {Style.bold(username)}."
 
     def no_such_user(username):
-        return f"{Style.warn("[WARNING]")} Login falhou: Usuário {Style.bold(username)} não existe."
+        return f"{Style.warn("[AVISO]")} Login falhou: Usuário {Style.bold(username)} não existe."
 
     def user_already_logged(username):
-        return f"{Style.warn("[WARNING]")} Login falhou: Tentativa de relogar o usuário {Style.bold(username)}."
+        return f"{Style.warn("[AVISO]")} Login falhou: Tentativa de relogar o usuário {Style.bold(username)}."
 
     def registration_successful(username):
         return f"{Style.blue("[INFO]")} Cadastro bem-sucedido: Usuário {Style.bold(username)} cadastrado."
 
     def user_already_exists(username):
-        return f"{Style.warn("[WARNING]")} Cadastro falhou: Tentativa de recadastrar o usuário {Style.bold(username)}."
+        return f"{Style.warn("[AVISO]")} Cadastro falhou: Tentativa de recadastrar o usuário {Style.bold(username)}."
+
+    def verification_successful(username):
+        return f"{Style.blue("[INFO]")} Verificação bem-sucedida: usuário {Style.bold(username)} teve seu token validado."
+
+    def verification_failed(username):
+        return f"{Style.warn("[AVISO]")} Verificação falhou: usuário {Style.bold(username)} não possuia um token válido."
+
+    def logout_successful(username):
+        return f"{Style.blue("[INFO]")} Logout bem-sucedido: usuário {Style.bold(username)} saiu."
+
+    def logout_failed(username):
+        return f"{Style.warn("[AVISO]")} Logout falhou: usuário {Style.bold(username)} tentou sair, mas não estava logado."
 
 
 def load_users():
@@ -114,10 +126,21 @@ def register(username, password_hash, name):
     return IasResponse.REGISTRATION_SUCCESSFUL
 
 
-def verify(token, usename):
+def verify(token, username):
     if logged_users[token] == username:
+        print(LogMessage.verification_successful(username))
         return IasResponse.VERIFICATION_SUCCESSFUL
+    print(LogMessage.verification_failed(username))
     return IasResponse.VERIFICATION_FAILED
+
+
+def logout(token, username):
+    if logged_users[token] == username:
+        del(logged_users[token])
+        print(LogMessage.logout_successful(username))
+        return IasResponse.LOGOUT_SUCCESSFUL
+    print(LogMessage.logout_failed(username))
+    return IasResponse.LOGOUT_FAILED
 
 
 registered_users = load_users()
@@ -147,6 +170,10 @@ def main():
         if opcode == IasOpCode.AUTHENTICATE:  # args are username and password
             username, password = args.split(" ")
             connection_socket.send(auth_response(username, password).encode())
+        elif opcode == IasOpCode.LOGOUT: # args are token and username
+            token, username = args.split(" ")
+            status = logout(token, username)
+            connection_socket.send(str(status).encode())
         elif opcode == IasOpCode.REGISTER:  # args are username, password and name
             username, password, name = args.split(" ")
             status = register(username, hasher.hash(password), name)

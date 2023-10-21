@@ -15,6 +15,7 @@ class IasOpCode:
     AUTHENTICATE = 0
     REGISTER = 1
     VERIFY = 2
+    LOGOUT = 3
 
 
 class IasResponse:
@@ -27,3 +28,5 @@ class IasResponse:
     VERIFICATION_FAILED = 6
     USER_ALREADY_EXISTS = 7
     LOGIN_FAILED = 8
+    LOGOUT_SUCCESSFUL = 9
+    LOGOUT_FAILED = 10
