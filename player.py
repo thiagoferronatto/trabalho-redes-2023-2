@@ -30,22 +30,22 @@ class LogMessage:
         return f"{Style.fail('[ERRO]')} Token de autenticação inválido para {Style.bold(username)}."
 
     def looking_for_match():
-        return f"{Style.blue("[INFO]")} Procurando partida..."
+        return f"{Style.blue('[INFO]')} Procurando partida..."
 
     def matchmaking_error():
-        return f"{Style.fail("[ERRO]")} Erro desconhecido no servidor de matchmaking."
+        return f"{Style.fail('[ERRO]')} Erro desconhecido no servidor de matchmaking."
 
     def accept_match():
-        return f"{Style.pink("[ENTRADA]")} Partida encontrada. Aceitar? [s/n] "
+        return f"{Style.pink('[ENTRADA]')} Partida encontrada. Aceitar? [s/n] "
 
     def match_declined_by_another():
-        return f"{Style.warn("[AVISO]")} Partida recusada por outro jogador."
+        return f"{Style.warn('[AVISO]')} Partida recusada por outro jogador."
 
     def match_declined():
-        return f"{Style.fail("[ERRO]")} Você recusou a partida."
+        return f"{Style.fail('[ERRO]')} Você recusou a partida."
 
     def invalid_answer():
-        return f"{Style.fail("[ERRO]")} Resposta inválida."
+        return f"{Style.fail('[ERRO]')} Resposta inválida."
 
 
 def authenticate(username, password):
