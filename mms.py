@@ -42,16 +42,15 @@ def main():
     print(LogMessage.server_available())
 
     while True:
-        qlen = len(matchmaking_queue)
-        if qlen > 0 and qlen % 2 == 0:
-            print(LogMessage.match_available(matchmaking_queue[0][0], matchmaking_queue[1][0]))
+        if len(matchmaking_queue) >= 2:
+            p1, p2 = matchmaking_queue[0], matchmaking_queue[1]
+            p1_name, p2_name = p1[0], p2[0]
+            p1_addr, p2_addr = p1[1], p2[1]
+
+            print(LogMessage.match_available(p1_name, p2_name))
 
             p1_socket = socket(AF_INET, SOCK_DGRAM)
             p2_socket = socket(AF_INET, SOCK_DGRAM)
-
-            p1, p2 = matchmaking_queue[0], matchmaking_queue[1]
-
-            p1_addr, p2_addr = p1[1], p2[1]
 
             msg = str(MmsResponse.MATCH_AVAILABLE).encode()
             p1_socket.sendto(msg, p1_addr)
@@ -63,11 +62,11 @@ def main():
             p1_declined, p2_declined = False, False
 
             if p1_decision == MmsOpCode.DECLINE_MATCH:
-                print(LogMessage.declined_match(p1[0], p2[0]))
+                print(LogMessage.declined_match(p1_name, p2_name))
                 matchmaking_queue.remove(p1)
                 p1_declined = True
             if p2_decision == MmsOpCode.DECLINE_MATCH:
-                print(LogMessage.declined_match(p2[0], p1[0]))
+                print(LogMessage.declined_match(p2_name, p1_name))
                 matchmaking_queue.remove(p2)
                 p2_declined = True
 
@@ -85,9 +84,9 @@ def main():
                 p2_socket.close()
                 continue
 
-            print(LogMessage.match_ready(matchmaking_queue[0][0], matchmaking_queue[1][0]))
+            print(LogMessage.match_ready(p1_name, p2_name))
             opsep = str(MmsResponse.MATCH_READY) + MMS_RESPONSE_CODE_ARGS_SEP
-            msg = opsep + p2_addr[0] + " " + str(p2_addr[1])
+            msg = opsep + p2_addr[0] + " " + str(p2_addr[1]) + " " + str(p1_addr[1])
             p1_socket.sendto(msg.encode(), p1_addr)
             msg = opsep + p1_addr[0] + " " + str(p1_addr[1])
             p2_socket.sendto(msg.encode(), p2_addr)
