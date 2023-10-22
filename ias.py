@@ -28,37 +28,37 @@ class User:
 
 class LogMessage:
     def server_listening():
-        return f"{Style.blue("[INFO]")} Servidor escutando pela porta {Style.bold(IAS_PORT)}."
+        return f"{Style.blue('[INFO]')} Servidor escutando pela porta {Style.bold(IAS_PORT)}."
 
     def login_successful(username):
-        return f"{Style.blue("[INFO]")} Login bem-sucedido: usuário {Style.bold(username)} entrou."
+        return f"{Style.blue('[INFO]')} Login bem-sucedido: usuário {Style.bold(username)} entrou."
 
     def wrong_credentials(username):
-        return f"{Style.warn("[AVISO]")} Login falhou: Credenciais inválidas para {Style.bold(username)}."
+        return f"{Style.warn('[AVISO]')} Login falhou: Credenciais inválidas para {Style.bold(username)}."
 
     def no_such_user(username):
-        return f"{Style.warn("[AVISO]")} Login falhou: Usuário {Style.bold(username)} não existe."
+        return f"{Style.warn('[AVISO]')} Login falhou: Usuário {Style.bold(username)} não existe."
 
     def user_already_logged(username):
-        return f"{Style.warn("[AVISO]")} Login falhou: Tentativa de relogar o usuário {Style.bold(username)}."
+        return f"{Style.warn('[AVISO]')} Login falhou: Tentativa de relogar o usuário {Style.bold(username)}."
 
     def registration_successful(username):
-        return f"{Style.blue("[INFO]")} Cadastro bem-sucedido: Usuário {Style.bold(username)} cadastrado."
+        return f"{Style.blue('[INFO]')} Cadastro bem-sucedido: Usuário {Style.bold(username)} cadastrado."
 
     def user_already_exists(username):
-        return f"{Style.warn("[AVISO]")} Cadastro falhou: Tentativa de recadastrar o usuário {Style.bold(username)}."
+        return f"{Style.warn('[AVISO]')} Cadastro falhou: Tentativa de recadastrar o usuário {Style.bold(username)}."
 
     def verification_successful(username):
-        return f"{Style.blue("[INFO]")} Verificação bem-sucedida: usuário {Style.bold(username)} teve seu token validado."
+        return f"{Style.blue('[INFO]')} Verificação bem-sucedida: usuário {Style.bold(username)} teve seu token validado."
 
     def verification_failed(username):
-        return f"{Style.warn("[AVISO]")} Verificação falhou: usuário {Style.bold(username)} não possuia um token válido."
+        return f"{Style.warn('[AVISO]')} Verificação falhou: usuário {Style.bold(username)} não possuia um token válido."
 
     def logout_successful(username):
-        return f"{Style.blue("[INFO]")} Logout bem-sucedido: usuário {Style.bold(username)} saiu."
+        return f"{Style.blue('[INFO]')} Logout bem-sucedido: usuário {Style.bold(username)} saiu."
 
     def logout_failed(username):
-        return f"{Style.warn("[AVISO]")} Logout falhou: usuário {Style.bold(username)} tentou sair, mas não estava logado."
+        return f"{Style.warn('[AVISO]')} Logout falhou: usuário {Style.bold(username)} tentou sair, mas não estava logado."
 
 
 def load_users():

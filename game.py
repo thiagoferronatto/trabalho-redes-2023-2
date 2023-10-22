@@ -1,5 +1,8 @@
-import pyray as rl
+
 import os
+import sys
+sys.path.insert(0, 'pyray')
+import pyray as rl
 import json
 import random
 from threading import Thread
@@ -258,7 +261,7 @@ def menu(game_state: GameState):
 
 objects_loaded = False
 
-# NOTE(yuri): O raylib só funciona com python3.11 e versões inferiores. Tentei rodar ele de todas as formas
+# NOTE(yuri): O raylib só funciona com python 3.11 e versões inferiores. Tentei rodar ele de todas as formas
 # com o python 3.12, mas infelizmente a unica solução é instalar alguns arquivos manualmente, o que creio que
 # não seja uma boa ideia, portanto o jogo só vai poder ser executado pelas versões 3.11 pra baixo.
 rl.init_window(1280, 720, "seloco")
