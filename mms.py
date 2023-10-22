@@ -9,28 +9,28 @@ from socket import *
 
 class LogMessage:
     def server_available():
-        return f"{Style.blue("[INFO]")} Servidor disponível pela porta {Style.bold(MATCHMAKING_PORT)}."
+        return f"{Style.blue('[INFO]')} Servidor disponível pela porta {Style.bold(MATCHMAKING_PORT)}."
 
     def match_available(player_1, player_2):
-        return f"{Style.blue("[INFO]")} Partida(s) disponível(is). Pareando {Style.bold(player_1)} com {Style.bold(player_2)}."
+        return f"{Style.blue('[INFO]')} Partida(s) disponível(is). Pareando {Style.bold(player_1)} com {Style.bold(player_2)}."
 
     def declined_match(player_1, player_2):
-        return f"{Style.warn("[AVISO]")} Jogador {Style.bold(player_1)} recusou a partida com {Style.bold(player_2)}; expulsando {Style.bold(player_1)} da fila."
+        return f"{Style.warn('[AVISO]')} Jogador {Style.bold(player_1)} recusou a partida com {Style.bold(player_2)}; expulsando {Style.bold(player_1)} da fila."
 
     def match_ready(player_1, player_2):
-        return f"{Style.blue("[INFO]")} Partida pronta entre {Style.bold(player_1)} e {Style.bold(player_2)}; enviando os dados de um para o outro."
+        return f"{Style.blue('[INFO]')} Partida pronta entre {Style.bold(player_1)} e {Style.bold(player_2)}; enviando os dados de um para o outro."
 
     def queued(player_name):
-        return f"{Style.blue("[INFO]")} Jogador {Style.bold(player_name)} entrou na fila."
+        return f"{Style.blue('[INFO]')} Jogador {Style.bold(player_name)} entrou na fila."
 
     def queueing_failed(player_name):
-        return f"{Style.warn("[AVISO]")} Jogador {Style.bold(player_name)} quis entrar na fila, mas não estava autenticado."
+        return f"{Style.warn('[AVISO]')} Jogador {Style.bold(player_name)} quis entrar na fila, mas não estava autenticado."
 
     def unqueued(player_name):
-        return f"{Style.blue("[INFO]")} Jogador {Style.bold(player_name)} saiu da fila."
+        return f"{Style.blue('[INFO]')} Jogador {Style.bold(player_name)} saiu da fila."
 
     def unqueueing_failed(player_name):
-        return f"{Style.warn("[AVISO]")} Jogador {Style.bold(player_name)} quis sair da fila, mas não estava autenticado."
+        return f"{Style.warn('[AVISO]')} Jogador {Style.bold(player_name)} quis sair da fila, mas não estava autenticado."
 
 
 def main():
