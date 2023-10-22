@@ -1,12 +1,9 @@
-#import pyray as ray
+import pyray as rl
 import os
 import json
-from enum import Enum
 import random
-import copy
 from threading import Thread
-
-from pprint import pprint
+import socket
 
 type_effectiveness = {
   "Normal": {"Rock": 0.5, "Ghost": 0, "Steel": 0.5},
@@ -85,22 +82,22 @@ class GameState():
     for i in range(0,2):
       if len(pokemons[i]) > 0:
         print(f"Trainer {i} won!")
-        
-'''
+
+
+#'''
 def load_textures(objects):
   for o in objects:
-    o["back_texture"] = ray.load_texture(o["sprites"]["back"])
-    o["front_texture"] = ray.load_texture(o["sprites"]["front"])
+    o["back_texture"] = rl.load_texture(o["sprites"]["back"])
+    o["front_texture"] = rl.load_texture(o["sprites"]["front"])
     if o["back_texture"].width == 0 or o["front_texture"].width == 0:
       raise RuntimeError("Texture could not be loaded")
-'''
+#'''
       
 def load_objects(result):
   with open('pokedex.json', 'r') as f:
     objects = json.loads(f.read())
   sprite_list = os.listdir('sprites')
-  #print(f"sprite list: {sprite_list}")
-  #load_textures(objects)
+  load_textures(objects)
   if len(objects) > 0:
     result = True
   return objects
@@ -116,34 +113,16 @@ def calculate_type_effectiveness(pokemon_a_types, pokemon_b_types):
     print("Attack was super effective!")
   return result
 
+# Aqui calculamos o dano aplicado de um pokemon ao outro, de acordo com a fórmula descrita em https://bulbapedia.bulbagarden.net/wiki/Damage
 def calculate_damage(pokemon_a, pokemon_b):
   modifier = random.uniform(0.01, 1.00)
   critical = 2 if modifier > 0.15 else 1 # se o numero aleatório for menor que 0.15, o dano crítico será aplicado (15% de chance)
-  level = 30 # level sempre será 30, por motivos de: não achei um jeito interessante de calular os levels :(
   effectiveness = calculate_type_effectiveness(pokemon_a['type'], pokemon_b['type']) # calculando o multiplicador de efetividade de tipos
   randomness = random.uniform(0.85, 1.0)
   upper_part = (((((2 * 40 * critical) / 5) + 2) * 40 * (pokemon_a['base']['Attack'] / pokemon_b['base']['Defense'])) / 50) + 2
   outer_part = (effectiveness * randomness)
   damage = upper_part * outer_part
   return damage
-
-'''
-def draw_loading_screen():
-  ray.draw_text("LOADING...", int(1280 / 2) - 40, int(720 / 2) - 40, 40, ray.BLACK)
-
-def draw_game(objects):
-  x = 0
-  y = 30
-  for o in objects:
-    ray.draw_text(str(o["id"]), x + 32, y - 20, 30, ray.RED)
-    ray.draw_rectangle_lines(x, y, 64, 64, ray.RED)
-    #ray.draw_texture(o["back_texture"], x, y, ray.WHITE)
-    ray.draw_texture_pro(o["back_texture"], (0, 0, o["back_texture"].width, o["back_texture"].height), (x, y, 64, 64), (0, 0), 0, ray.WHITE)
-    x += 64
-    if x > 1280:
-      y += 64
-      x = 0
-'''
 
 # Função para adicionar um Pokémon individual (ETAPA 1)
 def adicionar_pokemon_individual(game_state: GameState):
@@ -274,16 +253,16 @@ def menu(game_state: GameState):
         etapa = consultar_pokemon()
     elif etapa == 5:
        break
-    
-
-
 
 # The default pokemon for now will be: charmander, bulbasaur and squirtle, for both players.
 
 objects_loaded = False
 
-#ray.init_window(1280, 720, "PokeRedes")
-#ray.set_target_fps(60)
+# NOTE(yuri): O raylib só funciona com python3.11 e versões inferiores. Tentei rodar ele de todas as formas
+# com o python 3.12, mas infelizmente a unica solução é instalar alguns arquivos manualmente, o que creio que
+# não seja uma boa ideia, portanto o jogo só vai poder ser executado pelas versões 3.11 pra baixo.
+rl.init_window(1280, 720, "seloco")
+rl.set_target_fps(60)
 
 objects = load_objects(objects_loaded)
 
@@ -294,12 +273,6 @@ print(f"Crie sua party, ela deve ter no mínimo 1 pokémon e no máximo 6!")
 # Inicie o menu
 menu(game_state)
 
-'''
-game_state.push_pokemon(0, game_state.get_pokemon_by_name("bulbasaur"))
-game_state.push_pokemon(0, game_state.get_pokemon_by_name("charmander"))
-game_state.push_pokemon(0, game_state.get_pokemon_by_name("squirtle"))
-'''
-
 # ALERTA: O segundo jogador, por enquanto, será um jogador com party hipotética, a partir do momento que implementarmos os sockets, a party será transmitida pelo adversário
 # até a porta que o jogador cliente estará ouvindo. Após as partys estiverem bem definidas, o jogo começará.
 
@@ -308,19 +281,36 @@ game_state.push_pokemon(1, game_state.get_pokemon_by_name("mew"))
 game_state.push_pokemon(1, game_state.get_pokemon_by_name("mewtwo"))
 
 battle_thread = Thread(target=game_state.simulate_battle)
-#game_state.simulate_battle()
 battle_thread.start()
 
-#print(f"objects: {objects}")
+def listen_to_player():
+  PORTA_HIPOTETICA = 12345
+  HOST_HIPOTETICO = 'localhost'  
+  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  sock.listen()
+  sock.recv()
 
-'''
-while not ray.window_should_close():
-  ray.begin_drawing()
-  ray.clear_background(ray.RAYWHITE)
+# TODO: listening thread only for testing purposes
+listening_thread = Thread(target=listen_to_player)
+#listening_thread = 
 
-  draw_game(objects)
+while not rl.window_should_close():
+  rl.begin_drawing()
+  rl.clear_background(rl.RAYWHITE)
+  x = 0
+  y = 30
+  for o in objects:
+    rl.draw_text(str(o['id']), x+32,y-20,30, rl.RED)
+    rl.draw_rectangle_lines(x, y, 64, 64, rl.RED)
+    rl.draw_texture_pro(o["back_texture"], (0, 0, o["back_texture"].width, o["back_texture"].height), (x, y, 64, 64), (0, 0), 0, rl.WHITE)
+    
+    x += 64
+    if x > 1280:
+      y += 64
+      x = 0
+    rl.draw_fps(5, 5)
   
+  rl.end_drawing()
+# END LOOP
+rl.close_window()
 
-  ray.draw_fps(ray.get_render_width() - 30, 10) 
-  ray.end_drawing()
-'''
