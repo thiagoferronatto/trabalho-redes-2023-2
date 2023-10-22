@@ -1,4 +1,6 @@
-# Data about the boundary of the information and authentication server
+"""
+Data about the boundary of the information and authentication server
+"""
 
 
 IAS_ADDRESS = "127.0.0.1"

@@ -1,4 +1,6 @@
-# Data about the boundary of the matchmaking server
+"""
+Data about the boundary of the matchmaking server
+"""
 
 
 MATCHMAKING_ADDRESS = "127.0.0.1"
@@ -16,6 +18,9 @@ class MmsOpCode:
     MAKE_UNAVAILABLE = 1
     ACCEPT_MATCH = 2
     DECLINE_MATCH = 3
+    LIST_PLAYERS = 4
+    LIST_MATCHES = 5
+    MATCH_ENDED = 6
 
 
 class MmsResponse:
@@ -26,3 +31,6 @@ class MmsResponse:
     IN_QUEUE = 4
     OUT_OF_QUEUE = 5
     OTHER_PLAYER_DECLINED = 6
+    PLAYER_LIST = 7
+    MATCH_LIST = 8
+    MATCH_ENDED = 9
