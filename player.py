@@ -381,10 +381,6 @@ def main():
             data = pickle.dumps(your_party_ids)
             game_socket.send(data)
 
-            # TODO: REMOVE DEBUG CODE
-            print(f"Your health: {game_state.player[0]['hp_data']}")
-            print(f"Other player's health: {game_state.player[1]['hp_data']}")
-
             # ================== GAME BEGINS =====================   
             my_turn = False
             run_battle(game_socket, my_turn)
@@ -406,7 +402,7 @@ def main():
             game_state.player[1]['name'] = game_socket.recv(1024).decode() 
 
             # ================== PREPARATION =====================
-            # TODO: communicate with player 1 through game_socket
+
             
             # SEND PARTY
             your_party_ids = game_state.get_ids_from_party(your_party)
@@ -421,11 +417,7 @@ def main():
             game_state.print_party(opponent_party)
 
             game_state.add_party_to_player(opponent_party, 1)
-            
-            
-            # TODO: REMOVE DEBUG CODE
-            print(f"Your health: {game_state.player[0]['hp_data']}")
-            print(f"Other player's health: {game_state.player[1]['hp_data']}")
+
 
             # ================== GAME BEGINS =====================        
             my_turn = True

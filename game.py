@@ -69,6 +69,7 @@ class GameState():
   
   def push_pokemon(self, player_id, pokemon_data):
     self.player[player_id]["pokemon"].append(pokemon_data)
+    self.player[player_id]["hp_data"].append(pokemon_data["base"]["HP"])
   
   def remove_pokemon(self, player_id, pokemon_id):
     for index, pokemon in enumerate(self.player[player_id]["pokemon"]):
@@ -134,7 +135,9 @@ class GameState():
     else:
       pokemon = self.get_pokemon_by_name(pokemon_id)
     
-    print(f"O Pokémon que você escolheu é {pokemon}, confirma? [s/n]")
+    print(f"O Pokémon que você escolheu é")
+    self.print_poke(pokemon)
+    print("Confirma? [s/n]")
     resposta = input()
     if resposta.lower() == "s":
       self.push_pokemon(0, pokemon)
@@ -157,8 +160,6 @@ class GameState():
     Returns:
       True se a operação funcionou, False caso não tenha funcionado
     """
-    print(party)
-    
     current_player = self.player[player_id]
     if len(current_player.get("pokemon")) == 0:
       current_player["pokemon"] = party
