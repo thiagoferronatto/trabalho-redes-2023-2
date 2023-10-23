@@ -17,7 +17,7 @@ IAS_MAX_NAME_LENGTH = 1024
 IAS_BACKLOG_SIZE = 8
 
 IAS_USERS_DB_PATH = "../data/users.db"
-IAS_LOG_FILE_PATH = "../log/ias.log"
+IAS_LOG_FILE_NAME = "ias.log"
 IAS_USERS_DB_SEP = "|||"
 
 
@@ -264,7 +264,7 @@ def logged_users_list():
 registered_users = load_users()
 logged_users = {}
 hasher = PasswordHasher()
-logger = Logger(IAS_LOG_FILE_PATH)
+logger = Logger(IAS_LOG_FILE_NAME)
 
 
 def main():

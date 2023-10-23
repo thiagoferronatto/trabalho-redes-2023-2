@@ -19,7 +19,7 @@ from socket import *
 from style import *
 
 
-MMS_LOG_FILE_PATH = "../log/mms.log"
+MMS_LOG_FILE_NAME = "mms.log"
 
 
 class LogMessage:
@@ -269,7 +269,7 @@ def end_match(username):
 
 matchmaking_queue = []
 match_list = []
-logger = Logger(MMS_LOG_FILE_PATH)
+logger = Logger(MMS_LOG_FILE_NAME)
 
 
 def main():
