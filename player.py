@@ -253,6 +253,8 @@ def get_hp_text(original_health, hp) -> str:
 
 def run_battle(game_socket: socket, my_turn: bool):
     game_running = True
+    
+    print(Style.blue(f"Seu adversário é: \"{game_state.player[1]['name']}\""))
     while game_running:
         time.sleep(0.5)
              

@@ -298,7 +298,7 @@ class GameState():
           etapa = 0
         else:
           break
-      return 1
+    return 1
 
   def get_ids_from_party(self, party):
     ids = []
