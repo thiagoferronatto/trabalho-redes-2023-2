@@ -34,3 +34,4 @@ class MmsResponse:
     PLAYER_LIST = 7
     MATCH_LIST = 8
     MATCH_ENDED = 9
+    OPERATION_NOT_SUPPORTED = 10

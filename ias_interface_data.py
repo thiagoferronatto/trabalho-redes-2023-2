@@ -11,6 +11,7 @@ IAS_AUTH_TOKEN_HEX_STR_LENGTH = 2 * IAS_AUTH_TOKEN_SIZE
 IAS_RESPONSE_CODE_SIZE = 8
 IAS_OPCODE_SIZE = 8
 IAS_OPCODE_ARGS_SEP = "|||"
+IAS_RESPONSE_CODE_ARGS_SEP = "|||"
 
 
 class IasOpCode:
@@ -18,6 +19,7 @@ class IasOpCode:
     REGISTER = 1
     VERIFY = 2
     LOGOUT = 3
+    LIST_USERS = 4
 
 
 class IasResponse:
@@ -32,3 +34,4 @@ class IasResponse:
     LOGIN_FAILED = 8
     LOGOUT_SUCCESSFUL = 9
     LOGOUT_FAILED = 10
+    USER_LIST = 11

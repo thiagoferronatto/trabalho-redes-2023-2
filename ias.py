@@ -254,6 +254,13 @@ def logout(token, username):
     return IasResponse.LOGOUT_FAILED
 
 
+def logged_users_list():
+    response = str(IasResponse.USER_LIST) + IAS_RESPONSE_CODE_ARGS_SEP
+    for user in logged_users.values():
+        response += user + "\n"
+    return response.encode()
+
+
 registered_users = load_users()
 logged_users = {}
 hasher = PasswordHasher()
@@ -307,6 +314,8 @@ def main():
             token, username = args.split(" ")
             status = verify(token, username)
             connection_socket.send(str(status).encode())
+        elif opcode == IasOpCode.LIST_USERS:  # no args
+            connection_socket.send(logged_users_list())
 
         connection_socket.close()
 

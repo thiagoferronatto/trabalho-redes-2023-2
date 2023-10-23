@@ -188,19 +188,54 @@ def look_for_match(token, username):
     matchmaking_socket.close()
 
 
-def list_players(token, username):
+def list_online_players(token, username):
+    auth_socket = socket()
+    auth_socket.connect((IAS_ADDRESS, IAS_PORT))
+    msg = str(IasOpCode.LIST_USERS)
+    auth_socket.send(msg.encode())
+    response = auth_socket.recv(1024).decode().split(IAS_RESPONSE_CODE_ARGS_SEP)
+    print(response)
+
+    if int(response[0]) == IasResponse.USER_LIST:
+        user_list = response[1]
+        print(
+            "\n\n---------------\n"
+            "Usuários online\n"
+            "---------------\n\n"
+            f"{user_list}"
+        )
+    else:
+        print("Erro ao buscar a lista de usuários.")
+        auth_socket.close()
+        logout(token, username)
+        exit(1)
+    auth_socket.close()
+
+
+def end_match(token, username):
+    mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
+    matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
+    msg = str(MmsOpCode.MATCH_ENDED) + MMS_OPCODE_ARGS_SEP + token + " "
+    msg += username
+    matchmaking_socket.sendto(msg.encode(), mm_addr)
+    response = int(matchmaking_socket.recv(MMS_RESPONSE_CODE_SIZE).decode())
+    matchmaking_socket.close()
+    if response == MmsResponse.MATCH_ENDED:
+        print("Partida encerrada.")
+
+
+def list_ongoing_matches(token, username):
     mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
     matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
 
-    msg = str(MmsOpCode.LIST_PLAYERS) + MMS_OPCODE_ARGS_SEP + token + " "
+    msg = str(MmsOpCode.LIST_MATCHES) + MMS_OPCODE_ARGS_SEP + token + " "
     msg += username
     matchmaking_socket.sendto(msg.encode(), mm_addr)
-    response = (
-        matchmaking_socket.recv(2**16).decode().split(MMS_RESPONSE_CODE_ARGS_SEP)
-    )
-    if int(response[0]) == MmsResponse.PLAYER_LIST:
-        player_list = response[1]
-        print(player_list)
+    response = matchmaking_socket.recv(4096).decode().split(MMS_RESPONSE_CODE_ARGS_SEP)
+    matchmaking_socket.close()
+    if int(response[0]) == MmsResponse.MATCH_LIST:
+        match_list = response[1]
+        print(match_list)
 
 
 def main():
@@ -234,9 +269,10 @@ def main():
         if op == 1:
             match_addr_info = look_for_match(token, username)
         elif op == 2:
-            list_players(token, username)
+            list_online_players(token, username)
             continue
         elif op == 3:
+            list_ongoing_matches(token, username)
             continue
         elif op == 0:
             break
@@ -256,6 +292,10 @@ def main():
 
             game_socket.close()
             server_socket.close()
+
+            input("Pressione [Enter] para encerrar a partida")
+
+            end_match(token, username)
         else:  # the other player is the server (you are player 2)
             game_socket = socket()
             game_socket.connect((ip, port))

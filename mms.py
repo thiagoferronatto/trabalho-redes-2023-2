@@ -215,37 +215,6 @@ def unqueue(username, addr):
     return str(MmsResponse.OUT_OF_QUEUE).encode()
 
 
-def list_players(username):
-    """
-    Returns a list of players in the matchmaking queue.
-
-    Parameters
-    ----------
-    username : str
-        The username of the user who requested the list.
-
-    Returns
-    -------
-    bytes
-        A byte string representing the response code and the list of players,
-        each with their username, IP address and port number, separated by tabs
-        and newlines.
-    """
-    response = str(MmsResponse.PLAYER_LIST) + MMS_RESPONSE_CODE_ARGS_SEP
-    for user in matchmaking_queue:
-        response += (
-            "\t"
-            + user[0]  # username
-            + " @ "
-            + user[1][0]  # ip
-            + ":"
-            + str(user[1][1])  # port
-            + "\n"
-        )
-    logger.log(LogMessage.mm_list_given(username), Logger.INFO)
-    return response.encode()
-
-
 def list_matches(username):
     """
     Returns a list of live matches that have been made by the matchmaking
@@ -263,12 +232,12 @@ def list_matches(username):
         each with two players' usernames, IP addresses and port numbers,
         separated by tabs, "vs" and newlines.
     """
-    response = str(MmsResponse.PLAYER_LIST) + MMS_RESPONSE_CODE_ARGS_SEP
+    response = str(MmsResponse.MATCH_LIST) + MMS_RESPONSE_CODE_ARGS_SEP
     for match in match_list:
         p1, p2 = match[0], match[1]
-        response += "\t" + p1[0] + " @ " + p1[1][0] + ":" + str(p1[1][1])
+        response += p1[0] + " @ " + p1[1][0] + ":" + str(p1[1][1])
         response += " vs "
-        response += "\t" + p2[0] + " @ " + p2[1][0] + ":" + str(p2[1][1])
+        response += p2[0] + " @ " + p2[1][0] + ":" + str(p2[1][1])
         response += "\n"
     logger.log(LogMessage.match_list_given(username), Logger.INFO)
     return response.encode()
@@ -338,7 +307,7 @@ def main():
         elif opcode == MmsOpCode.MAKE_UNAVAILABLE:
             server_socket.sendto(unqueue(username, addr), addr)
         elif opcode == MmsOpCode.LIST_PLAYERS:
-            server_socket.sendto(list_players(username), addr)
+            pass  # operation no longer supported
         elif opcode == MmsOpCode.LIST_MATCHES:
             server_socket.sendto(list_matches(username), addr)
         elif opcode == MmsOpCode.MATCH_ENDED:
