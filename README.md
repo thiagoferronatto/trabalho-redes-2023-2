@@ -11,12 +11,10 @@
 ### Exemplo
 
 ```
-trabalho-redes-2023-2$ python -m pip install setuptools
 trabalho-redes-2023-2$ python -m pip install argon2-cffi
-trabalho-redes-2023-2$ python -m pip install raylib
 trabalho-redes-2023-2$ python ias.py &
 
-trabalho-redes-2023-2$ python player.py meu_username minha_senha
+trabalho-redes-2023-2$ python player.py
 ```
 
 ## Arquivos
@@ -47,9 +45,8 @@ Contém funções que encapsulam -- e consequentemente facilitam -- o uso de tex
 
 ### `game.py`
 
-Possui o aplicativo que representa o jogo em si. Ele carrega os dados presentes em pokedex.json para a simulação das batalhas Pokémon e executa a simulação de batalha de acordo com a fórmula utilizada nos jogos reais.
+Possui o aplicativo que representa o jogo em si. Ele carrega os dados presentes em pokedex.json e possui os métodos necessários para os cálculos relevantes à batalha.
 
 ## Justificativa para as bibliotecas
 
 - **Argon2**: Armazenamento de senhas.
-- **Raylib**: Criação de janela e manipulação de efeitos audiovisuais

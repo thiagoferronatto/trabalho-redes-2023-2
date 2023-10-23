@@ -182,6 +182,18 @@
     O projeto é composto por três arquivos principais: \texttt{ias.py}, \texttt{mms.py} e \texttt{player.py}, representando, respectivamente, o SAI, o SMM, e o cliente. O SAI e o SMM podem ser iniciados em qualquer ordem, desde que os clientes só sejam iniciados depois de ambos os servidores estarem disponíveis.
     
     Daí em diante, basta escolher as opções desejadas no menu do cliente. Os servidores mantêm um \textit{log}, tanto no terminal em que executam quanto em arquivos (\texttt{ias.log}, \texttt{mms.log}), dos eventos encadeados pelos clientes.
+
+    \subsection{O jogo}
+    O jogo se baseia em uma batalha entre dois treinadores Pokémon, ou seja, é necessário que cada um dos jogadores monte seu time com no mínimo um (e no máximo seis) Pokémon.
+    Após executar o arquivo \texttt{player.py} e realizar o processo de autenticação, o jogador é apresentado a seis opções:
+    \begin{enumerate}
+        \item Adicionar Pokémon individual: o jogo irá pedir o ID ou nome do Pokémon que o jogador deseja adicionar ao seu time.        
+        \item Adicionar party inteira: o jogo irá pedir os seis ID do time que o jogador deseja formar.
+        \item Consultar Pokémon: o jogo irá imprimir uma lista dos 151 Pokémon disponíveis
+        \item Consultar dados de Pokémon específico: o jogo irá pedir o ID ou nome do Pokémon, e após isso irá imprimir os dados completos dele.
+        \item Confirmar party e procurar jogo: caso o jogador já esteja satisfeito com o time atual, ele selecionará essa opção, então será levado ao menu de \textit{matchmaking}.
+        \item[0.] Sair: o jogo finaliza sua execução e realiza a operação de  \textit{logout}.
+    \end{enumerate}
     
     \section{Código}
     
