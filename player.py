@@ -6,7 +6,9 @@ from mms_interface_data import *
 from socket import *
 from style import *
 import sys
-
+from game import GameState
+import time
+import pickle
 
 class LogMessage:
     def bad_usage():
@@ -237,6 +239,68 @@ def list_ongoing_matches(token, username):
         match_list = response[1]
         print(match_list)
 
+game_state = GameState()
+
+def get_hp_text(original_health, hp) -> str:
+    result: str
+    if hp >= original_health * 0.6:
+        result = Style.green(f"{hp:.2f}")
+    elif hp >= original_health * 0.3:
+        result = Style.warn(f"{hp:.2f}")
+    else:
+        result = Style.red(f"{hp:.2f}")
+    return result
+
+def run_battle(game_socket: socket, my_turn: bool):
+    game_running = True
+    while game_running:
+        time.sleep(0.5)
+             
+        player_current_pokemon = game_state.player[0]["pokemon"][0]
+        enemy_current_pokemon = game_state.player[1]["pokemon"][0]
+        
+        # Enviamos as mensagens de dano
+        if my_turn:
+            damage_dealt = game_state.calculate_damage(player_current_pokemon, enemy_current_pokemon)
+            game_socket.send(str(damage_dealt).encode())
+            game_state.player[1]["hp_data"][0] -= damage_dealt
+            
+            player_hp_text = get_hp_text(game_state.player[0]["pokemon"][0]['base']['HP'], game_state.player[0]['hp_data'][0])
+            enemy_hp_text = get_hp_text(game_state.player[1]["pokemon"][0]['base']['HP'], game_state.player[1]['hp_data'][0])
+            
+            print(f"Seu {player_current_pokemon['name']['english']} ({player_hp_text} HP) causou {damage_dealt:.2f} de dano em {enemy_current_pokemon['name']['english']} ({enemy_hp_text} HP)")
+        else:
+            damage_received_message = game_socket.recv(1024).decode()
+            game_state.player[0]["hp_data"][0] -= float(damage_received_message)
+            
+            player_hp_text = get_hp_text(game_state.player[0]["pokemon"][0]['base']['HP'], game_state.player[0]['hp_data'][0])
+            enemy_hp_text = get_hp_text(game_state.player[1]["pokemon"][0]['base']['HP'], game_state.player[1]['hp_data'][0])
+            
+            print(f"Seu {player_current_pokemon['name']['english']} ({player_hp_text} HP) sofreu {float(damage_received_message):.2f} de dano de {enemy_current_pokemon['name']['english']} ({enemy_hp_text} HP)")
+        
+        # Flipando o turno (se for false vira true e vice-versa)
+        my_turn = not my_turn
+        
+        # Verifica se algum Pokemon foi derrotado, caso sim, ele é removido da fila
+        for i in range(0, 2):
+            if game_state.player[i]["hp_data"][0] <= 0:
+                
+                if i == 0:
+                    print(Style.red(f"Seu {game_state.player[i]['pokemon'][0]['name']['english']} desmaiou! :("))
+                else:
+                    print(Style.green(f"O {game_state.player[i]['pokemon'][0]['name']['english']} do adversário desmaiou!"))
+                print("==========================================")
+                del game_state.player[i]["hp_data"][0]
+                del game_state.player[i]["pokemon"][0]
+
+            if len(game_state.player[i]["pokemon"]) < 1:
+                if i == 0:
+                    print(Style.red("Você foi derrotado :("))
+                else:
+                    print(Style.green("Você venceu! :)"))
+                game_running = False
+                break
+
 
 def main():
     op = int(input("1. Fazer login\n2. Fazer cadastro\n\n0. Sair\n\n: "))
@@ -252,6 +316,9 @@ def main():
     elif op == 2:
         name = input("Nome completo: ")
         token = register(username, password, name)
+
+    
+    game_state.menu()
 
     while True:
         op = int(
@@ -280,15 +347,46 @@ def main():
 
         print(f"other player @ {ip}:{port}")
 
+        your_party = game_state.player[0]["pokemon"]
+
         if server_port:  # you are the server (player 1)
             server_socket = socket(AF_INET, SOCK_STREAM)
             server_socket.bind(("", server_port))
             server_socket.listen(1)
             game_socket, _ = server_socket.accept()
 
+            game_state.player[0]['name'] = username
+            game_state.player[1]['name'] = game_socket.recv(1024).decode()
+     
+            game_socket.send(username.encode())       
+            
+            # ================== PREPARATION =====================
             # TODO: communicate with player 2 through game_socket
-            msg = game_socket.recv(1024).decode()
-            print(msg)
+            
+            # RECEIVE PARTY
+            opponent_party = game_socket.recv(1024)
+            opponent_party = pickle.loads(opponent_party)
+            
+            opponent_party = game_state.translate_party_to_pokemon_data(opponent_party)
+            game_state.print_party(opponent_party)
+            
+            game_state.add_party_to_player(opponent_party, 1)
+            
+            
+            # SEND PARTY
+            your_party_ids = game_state.get_ids_from_party(your_party)
+            data = pickle.dumps(your_party_ids)
+            game_socket.send(data)
+
+            # TODO: REMOVE DEBUG CODE
+            print(f"Your health: {game_state.player[0]['hp_data']}")
+            print(f"Other player's health: {game_state.player[1]['hp_data']}")
+
+            # ================== GAME BEGINS =====================   
+            my_turn = False
+            run_battle(game_socket, my_turn)
+            
+            # ================== GAME ENDS =====================  
 
             game_socket.close()
             server_socket.close()
@@ -300,8 +398,37 @@ def main():
             game_socket = socket()
             game_socket.connect((ip, port))
 
+            game_socket.send(username.encode())
+            game_state.player[0]['name'] = username
+            game_state.player[1]['name'] = game_socket.recv(1024).decode() 
+
+            # ================== PREPARATION =====================
             # TODO: communicate with player 1 through game_socket
-            game_socket.send("asdf".encode())
+            
+            # SEND PARTY
+            your_party_ids = game_state.get_ids_from_party(your_party)
+            data = pickle.dumps(your_party_ids)
+            game_socket.send(data)
+
+            # RECEIVE PARTY
+            opponent_party = game_socket.recv(1024)
+            opponent_party = pickle.loads(opponent_party)
+
+            opponent_party = game_state.translate_party_to_pokemon_data(opponent_party)
+            game_state.print_party(opponent_party)
+
+            game_state.add_party_to_player(opponent_party, 1)
+            
+            
+            # TODO: REMOVE DEBUG CODE
+            print(f"Your health: {game_state.player[0]['hp_data']}")
+            print(f"Other player's health: {game_state.player[1]['hp_data']}")
+
+            # ================== GAME BEGINS =====================        
+            my_turn = True
+            run_battle(game_socket, my_turn)
+
+            # ================== GAME ENDS =====================  
 
             game_socket.close()
 
