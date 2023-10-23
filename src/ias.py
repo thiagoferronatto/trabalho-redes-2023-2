@@ -1,4 +1,16 @@
-# Information and Authentication Server
+"""
+ias.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
+This file contains the functions for an information and authentication server.
+
+The server uses TCP sockets to communicate with the clients. The server
+maintains lists of registered users and logged users, and registers and
+authenticates users by manipulating these lists and a database file. The server
+handles different types of requests from the users based on the opcodes sent by
+them. The server also logs the relevant messages using a logger object.
+"""
 
 
 from ias_interface_data import *
@@ -12,17 +24,47 @@ import enum
 
 
 IAS_MAX_USERNAME_LENGTH = 256
+"""The maximum length of a username for a user in the IAS."""
+
 IAS_MAX_PASSWORD_LENGTH = 256
+"""The maximum length of a password for a user in the IAS."""
+
 IAS_MAX_NAME_LENGTH = 1024
+"""The maximum length of a name for a user in the IAS."""
+
 IAS_BACKLOG_SIZE = 8
+"""The maximum number of pending connections that the IAS can queue."""
 
 IAS_USERS_DB_PATH = "../data/users.db"
+"""The path to the database file that stores the information of the registered\
+ users in the IAS."""
+
 IAS_LOG_FILE_NAME = "ias.log"
+"""The name of the log file that records the messages from the IAS."""
+
 IAS_USERS_DB_SEP = "|||"
+"""The separator used to split the fields of a user record in the database\
+ file."""
 
 
 class User:
+    """
+    A class that represents a user in the information and authentication server.
+
+    Attributes
+    ----------
+    username : str
+        The username of the user, used for logging in.
+    password_hash : str
+        The hashed password of the user, used for verifying the login.
+    name : str
+        The name of the user, used for displaying in the game.
+    """
+
     def __init__(__self__, username, password_hash, name):
+        """
+        Initializes a new instance of the class with the given attributes.
+        """
         __self__.username = username
         __self__.password_hash = password_hash
         __self__.name = name

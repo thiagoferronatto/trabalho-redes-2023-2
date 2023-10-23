@@ -1,5 +1,9 @@
 """
-Data about the boundary of the matchmaking server
+mms_interface_data.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
+Data about the boundary of the matchmaking server.
 """
 
 

@@ -1,4 +1,13 @@
-# Player client
+"""
+player.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
+This file contains the main interface through which the average user is going to
+interact with the system. It provides simple text-based menus for navigating
+through the extremely simple operations that the application can perform,
+including access to the Pokémon Netventures battle simulation game.
+"""
 
 
 from ias_interface_data import *
@@ -12,6 +21,11 @@ import pickle
 
 
 class LogMessage:
+    """
+    A class that contains methods for generating log messages for the player
+    client.
+    """
+
     def bad_usage():
         return f"{Style.fail('[ERRO]')} Uso: python player.py"
 
@@ -52,6 +66,25 @@ class LogMessage:
 
 
 def login(username, password):
+    """
+    Attempts to authenticate a user with the IAS server using a username and
+    password. If successful, returns a token that can be used for further
+    communication with the server. If unsuccessful, prints an error message and
+    exits the program.
+
+    Parameters
+    ----------
+    username : str
+        The username of the user who wants to log in.
+    password : str
+        The password of the user who wants to log in.
+
+    Returns
+    -------
+    str or None
+        The authentication token as a hexadecimal string if login is successful,
+        or None otherwise.
+    """
     auth_socket = socket()
     auth_socket.connect((IAS_ADDRESS, IAS_PORT))
     msg = str(IasOpCode.AUTHENTICATE) + IAS_OPCODE_ARGS_SEP + username + " " + password
@@ -71,6 +104,27 @@ def login(username, password):
 
 
 def register(username, password, name):
+    """
+    Attempts to register a new user with the IAS server using a username,
+    password, and name. If successful, returns a token that can be used for
+    further communication with the server. If unsuccessful, prints an error
+    message and exits the program.
+
+    Parameters
+    ----------
+    username : str
+        The username of the new user who wants to register.
+    password : str
+        The password of the new user who wants to register.
+    name : str
+        The name of the new user who wants to register.
+
+    Returns
+    -------
+    str or None
+        The authentication token as a hexadecimal string if registration is
+        successful, or None otherwise.
+    """
     auth_socket = socket()
     auth_socket.connect((IAS_ADDRESS, IAS_PORT))
     msg = str(IasOpCode.REGISTER) + IAS_OPCODE_ARGS_SEP + username + " " + password
@@ -91,6 +145,18 @@ def register(username, password, name):
 
 
 def logout(token, username):
+    """
+    Attempts to log out a user from the IAS server using a token and a username.
+    If successful, prints a confirmation message and closes the connection. If
+    unsuccessful, prints an error message and exits the program.
+
+    Parameters
+    ----------
+    token : str
+        The authentication token of the user who wants to log out.
+    username : str
+        The username of the user who wants to log out.
+    """
     auth_socket = socket()
     auth_socket.connect((IAS_ADDRESS, IAS_PORT))
     msg = str(IasOpCode.LOGOUT) + IAS_OPCODE_ARGS_SEP + token + " " + username
@@ -106,6 +172,25 @@ def logout(token, username):
 
 
 def look_for_match(token, username):
+    """
+    Attempts to find a match for a user with the matchmaking server using a
+    token and a username. If successful, returns a tuple of the IP address, port
+    number, and server port of the match. If unsuccessful, prints an error
+    message and exits the program.
+
+    Parameters
+    ----------
+    token : str
+        The authentication token of the user who wants to find a match.
+    username : str
+        The username of the user who wants to find a match.
+
+    Returns
+    -------
+    tuple or None
+        A tuple of the form (ip, port, server_port) if a match is found, or None
+        otherwise.
+    """
     mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
     matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
 
@@ -192,6 +277,19 @@ def look_for_match(token, username):
 
 
 def list_online_players(token, username):
+    """
+    Requests the list of online users from the IAS server using a token and a
+    username. If successful, prints the list of online users in a formatted way.
+    If unsuccessful, prints an error message and exits the program.
+
+    Parameters
+    ----------
+    token : str
+        The authentication token of the user who wants to see the list of online
+        users.
+    username : str
+        The username of the user who wants to see the list of online users.
+    """
     auth_socket = socket()
     auth_socket.connect((IAS_ADDRESS, IAS_PORT))
     msg = str(IasOpCode.LIST_USERS)
@@ -216,6 +314,18 @@ def list_online_players(token, username):
 
 
 def end_match(token, username):
+    """
+    Notifies the matchmaking server that a match has ended using a token and a
+    username. If successful, prints a confirmation message and closes the
+    connection. If unsuccessful, does nothing.
+
+    Parameters
+    ----------
+    token : str
+        The authentication token of the user who has ended the match.
+    username : str
+        The username of the user who has ended the match.
+    """
     mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
     matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
     msg = str(MmsOpCode.MATCH_ENDED) + MMS_OPCODE_ARGS_SEP + token + " "
@@ -228,9 +338,21 @@ def end_match(token, username):
 
 
 def list_ongoing_matches(token, username):
+    """
+    Requests the list of ongoing matches from the matchmaking server using a
+    token and a username. If successful, prints the list of ongoing matches in a
+    formatted way. If unsuccessful, does nothing.
+
+    Parameters
+    ----------
+    token : str
+        The authentication token of the user who wants to see the list of
+        ongoing matches.
+    username : str
+        The username of the user who wants to see the list of ongoing matches.
+    """
     mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
     matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
-
     msg = str(MmsOpCode.LIST_MATCHES) + MMS_OPCODE_ARGS_SEP + token + " "
     msg += username
     matchmaking_socket.sendto(msg.encode(), mm_addr)
@@ -245,6 +367,24 @@ game_state = GameState()
 
 
 def get_hp_text(original_health, hp) -> str:
+    """
+    Returns a formatted string of the current health of a player, based on the
+    original health and the current health. The string is colored green, yellow,
+    or red depending on the percentage of health remaining.
+
+    Parameters
+    ----------
+    original_health : float
+        The original health of the player at the start of the game.
+    hp : float
+        The current health of the player.
+
+    Returns
+    -------
+    str
+        The formatted string of the current health, with color and two decimal
+        places.
+    """
     result: str
     if hp >= original_health * 0.6:
         result = Style.green(f"{hp:.2f}")
@@ -256,8 +396,23 @@ def get_hp_text(original_health, hp) -> str:
 
 
 def run_battle(game_socket: socket, my_turn: bool):
+    """
+    Runs the main loop of the battle game, where each player takes turns to deal
+    damage to the opponent's pokemon.The game ends when one player runs out of
+    pokemon or quits the game. The game_socket is used to send and receive
+    messages between the players. The my_turn parameter indicates whether it is
+    the current player's turn or not.
+
+    Parameters
+    ----------
+    game_socket : socket
+        The socket object that connects the current player with the opponent.
+    my_turn : bool
+        A boolean value that indicates whether it is the current player's turn
+        or not.
+    """
     game_running = True
-    
+
     print(Style.blue(f"Seu adversário é: \"{game_state.player[1]['name']}\""))
     while game_running:
         time.sleep(0.5)
@@ -334,6 +489,16 @@ def run_battle(game_socket: socket, my_turn: bool):
 
 
 def main():
+    """
+    Runs the main menu of the game, where the user can choose to log in,
+    register, or exit. If the user logs in or registers, they can then access
+    the game menu, where they can choose to look for a match, list online users,
+    list ongoing matches, or exit. If the user looks for a match, they will be
+    connected with another player and start a battle game using pokemon. The
+    user can be either the server or the client of the game, depending on who
+    was first in queue in the matchmaking server. The user can quit the game at
+    any time by choosing the exit option.
+    """
     op = int(input("1. Fazer login\n2. Fazer cadastro\n\n0. Sair\n\n: "))
 
     if op == 0:
@@ -358,7 +523,7 @@ def main():
                     "\n\n"
                     "1. Procurar partida\n"
                     "2. Listar usuários online\n"
-                    "2. Listar partidas em andamento\n\n"
+                    "3. Listar partidas em andamento\n\n"
                     "0. Sair"
                     "\n\n: "
                 )

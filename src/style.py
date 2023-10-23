@@ -1,7 +1,24 @@
-# Colors and stuff to print things in the terminal
+"""
+style.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
+This file contains a class used as an abstraction for command-line text styling.
+"""
 
 
 class Style:
+    """
+    A class that provides static methods and constants for applying colors and
+    formatting to text objects. The class uses ANSI escape codes to modify the
+    text appearance in the terminal. The class has constants for different
+    colors and styles, such as PINK, BLUE, CYAN, GREEN, RED, WARNING, FAIL,
+    ENDC, BOLD, and UNDERLINE. The class also has methods for each color and
+    style that take an object as an argument and return a formatted string with
+    the corresponding escape codes. For example, Style.blue("Hello") returns
+    "\033[94mHello\033[0m", which prints "Hello" in blue color in the terminal.
+    """
+
     PINK = "\033[95m"
     BLUE = "\033[94m"
     CYAN = "\033[96m"
@@ -18,7 +35,7 @@ class Style:
 
     def green(obj):
         return f"{Style.GREEN}{obj}{Style.ENDC}"
-    
+
     def red(obj):
         return f"{Style.RED}{obj}{Style.ENDC}"
 

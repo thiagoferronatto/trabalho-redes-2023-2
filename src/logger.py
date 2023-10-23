@@ -1,5 +1,9 @@
 """
-A logger to print troubleshooting information to a file
+logger.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
+A logger to print troubleshooting information to a file.
 """
 
 

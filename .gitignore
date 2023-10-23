@@ -1,3 +1,6 @@
+# .gitignore
+# Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
 __pycache__
 .vscode
 *.db

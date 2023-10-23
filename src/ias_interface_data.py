@@ -1,5 +1,10 @@
 """
-Data about the boundary of the information and authentication server
+ias_interface_data.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
+This file contains data about the boundary of the information and authentication
+server.
 """
 
 

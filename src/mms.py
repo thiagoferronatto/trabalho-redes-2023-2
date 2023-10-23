@@ -1,4 +1,8 @@
 """
+mms.py
+
+Authors: Thiago Ferronatto and Yuri Moraes Gavilan
+
 This file contains the functions for a game matchmaking server.
 
 The server uses UDP sockets to communicate with the clients and TCP sockets to
@@ -20,6 +24,7 @@ from style import *
 
 
 MMS_LOG_FILE_NAME = "mms.log"
+"""The name of the log file that records the messages from the MMS."""
 
 
 class LogMessage:
