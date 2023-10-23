@@ -321,19 +321,20 @@ def main():
     while True:
         for i in range(0, 2):
             game_state.player[i]['pokemon'].clear()
-        
-        game_state.menu()
-        
-        op = int(
-            input(
-                "\n\n"
-                "1. Procurar partida\n"
-                "2. Listar usuários online\n"
-                "2. Listar partidas em andamento\n\n"
-                "0. Sair"
-                "\n\n: "
+
+        if game_state.menu() == 1:
+            op = int(
+                input(
+                    "\n\n"
+                    "1. Procurar partida\n"
+                    "2. Listar usuários online\n"
+                    "2. Listar partidas em andamento\n\n"
+                    "0. Sair"
+                    "\n\n: "
+                )
             )
-        )
+        else:
+            op = 0
 
         match_addr_info = ()
         if op == 1:

@@ -263,6 +263,7 @@ class GameState():
         print("3 - Consultar Pokémon")
         print("4 - Consultar dados de Pokémon específico")
         print("5 - Confirmar party e procurar jogo")
+        print("0 - Sair")
         opcao = input("Selecione uma opção: ")
 
         # TODO: O código está duplicado. Poderia ser mais bonito, mas por enquanto funciona hehe
@@ -277,6 +278,8 @@ class GameState():
           etapa = self.consultar_pokemon()
         elif opcao == "5":
            etapa = 5
+        elif opcao == "0":
+           return 0
 
       elif etapa == 1:
           etapa = self.add_individual_pokemon()
@@ -295,6 +298,7 @@ class GameState():
           etapa = 0
         else:
           break
+      return 1
 
   def get_ids_from_party(self, party):
     ids = []
@@ -302,76 +306,3 @@ class GameState():
       ids.append(poke["id"])
     return ids
   
-  def encode_id_list_into_string(self, list):
-    result = ""
-    for id_ in list:
-      result += f"{id_} "
-    return result
-
-
-
-
-# The default pokemon for now will be: charmander, bulbasaur and squirtle, for both players.
-
-'''
-objects_loaded = False
-
-# NOTE(yuri): O raylib só funciona com python 3.11 e versões inferiores. Tentei rodar ele de todas as formas
-# com o python 3.12, mas infelizmente a unica solução é instalar alguns arquivos manualmente, o que creio que
-# não seja uma boa ideia, portanto o jogo só vai poder ser executado pelas versões 3.11 pra baixo.
-#rl.init_window(1280, 720, "seloco")
-#rl.set_target_fps(60)
-
-objects = load_objects(objects_loaded)
-
-game_state = GameState(objects)
-
-print(f"Bem-vindo ao PokéRedes!")
-print(f"Crie sua party, ela deve ter no mínimo 1 pokémon e no máximo 6!")
-# Inicie o menu
-menu(game_state)
-
-# ALERTA: O segundo jogador, por enquanto, será um jogador com party hipotética, a partir do momento que implementarmos os sockets, a party será transmitida pelo adversário
-# até a porta que o jogador cliente estará ouvindo. Após as partys estiverem bem definidas, o jogo começará.
-
-game_state.push_pokemon(1, game_state.get_pokemon_by_name("dragonite"))
-game_state.push_pokemon(1, game_state.get_pokemon_by_name("mew"))
-game_state.push_pokemon(1, game_state.get_pokemon_by_name("mewtwo"))
-
-battle_thread = Thread(target=game_state.simulate_battle)
-battle_thread.start()
-
-def listen_to_player():
-  PORTA_HIPOTETICA = 12345
-  HOST_HIPOTETICO = 'localhost'  
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  sock.listen()
-  sock.recv()
-
-# TODO: listening thread only for testing purposes
-listening_thread = Thread(target=listen_to_player)
-#listening_thread = 
-
-'''
-
-'''
-while not rl.window_should_close():
-  rl.begin_drawing()
-  rl.clear_background(rl.RAYWHITE)
-  x = 0
-  y = 30
-  for o in objects:
-    rl.draw_text(str(o['id']), x+32,y-20,30, rl.RED)
-    rl.draw_rectangle_lines(x, y, 64, 64, rl.RED)
-    rl.draw_texture_pro(o["back_texture"], (0, 0, o["back_texture"].width, o["back_texture"].height), (x, y, 64, 64), (0, 0), 0, rl.WHITE)
-    
-    x += 64
-    if x > 1280:
-      y += 64
-      x = 0
-    rl.draw_fps(5, 5)
-  
-  rl.end_drawing()
-# END LOOP
-rl.close_window()
-'''
