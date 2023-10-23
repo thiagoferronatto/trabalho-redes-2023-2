@@ -50,24 +50,22 @@ class Logger:
             Logger.FAIL, Logger.INPUT, or Logger.NONE. The default is
             Logger.NONE.
         """
-        message = str(datetime.now()) + " " + message
+        prefix = ""
+        timestamp = str(datetime.now())
         if level == Logger.INFO:
             prefix = "[INFO]"
-            print(f"{Style.blue(prefix)} {message}")
-            message = prefix + " " + message
+            print(f"{Style.blue(prefix)} {Style.green(timestamp)} {message}")
         elif level == Logger.WARNING:
             prefix = "[AVISO]"
-            print(f"{Style.warn(prefix)} {message}")
-            message = prefix + " " + message
+            print(f"{Style.warn(prefix)} {Style.green(timestamp)} {message}")
         elif level == Logger.FAIL:
             prefix = "[ERRO]"
-            print(f"{Style.fail(prefix)} {message}")
-            message = prefix + " " + message
+            print(f"{Style.fail(prefix)} {Style.green(timestamp)} {message}")
         elif level == Logger.INPUT:
             prefix = "[ENTRADA]"
-            print(f"{Style.pink(prefix)} {message}")
-            message = prefix + " " + message
+            print(f"{Style.pink(prefix)} {Style.green(timestamp)} {message}")
         else:
             print(message)
-        __self__.file.write(message + "\n")
+        message = prefix + " " + timestamp + " " + message + "\n"
+        __self__.file.write(message)
         __self__.file.flush()

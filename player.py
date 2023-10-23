@@ -48,7 +48,7 @@ class LogMessage:
         return f"{Style.fail('[ERRO]')} Resposta inválida."
 
 
-def authenticate(username, password):
+def login(username, password):
     auth_socket = socket()
     auth_socket.connect((IAS_ADDRESS, IAS_PORT))
     msg = str(IasOpCode.AUTHENTICATE) + IAS_OPCODE_ARGS_SEP + username + " " + password
@@ -102,20 +102,7 @@ def logout(token, username):
     auth_socket.close()
 
 
-def main():
-    if len(sys.argv) < 3:
-        print(LogMessage.bad_usage())
-        return
-    username = sys.argv[1]
-    password = sys.argv[2]  # would benefit from an encrypted connection
-    token = None
-    if len(sys.argv) > 3:
-        token = register(username, password, sys.argv[3])
-    else:
-        token = authenticate(username, password)
-
-    # at this point the player has a valid token, proceed to matchmaking server
-
+def look_for_match(token, username):
     mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
     matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
 
@@ -136,8 +123,6 @@ def main():
         matchmaking_socket.close()
         logout(token, username)
         exit(1)
-
-    # I apologize in advance for how awful this next section is.
 
     in_queue = True
     while in_queue:
@@ -167,6 +152,7 @@ def main():
                     if len(args) == 3:
                         server_port = int(args[2])
                     in_queue = False
+                    return (ip, port, server_port)
                 elif respcode == MmsResponse.OTHER_PLAYER_DECLINED:
                     print(LogMessage.match_declined_by_another())
                     print(LogMessage.looking_for_match())
@@ -201,28 +187,85 @@ def main():
 
     matchmaking_socket.close()
 
-    print(f"other player @ {ip}:{port}")
 
-    if server_port:  # you are the server (player 1)
-        server_socket = socket(AF_INET, SOCK_STREAM)
-        server_socket.bind(("", server_port))
-        server_socket.listen(1)
-        game_socket, other_player_addr = server_socket.accept()
+def list_players(token, username):
+    mm_addr = (MATCHMAKING_ADDRESS, MATCHMAKING_PORT)
+    matchmaking_socket = socket(AF_INET, SOCK_DGRAM)
 
-        # TODO: communicate with player 2 through game_socket
-        msg = game_socket.recv(1024).decode()
-        print(msg)
+    msg = str(MmsOpCode.LIST_PLAYERS) + MMS_OPCODE_ARGS_SEP + token + " "
+    msg += username
+    matchmaking_socket.sendto(msg.encode(), mm_addr)
+    response = (
+        matchmaking_socket.recv(2**16).decode().split(MMS_RESPONSE_CODE_ARGS_SEP)
+    )
+    if int(response[0]) == MmsResponse.PLAYER_LIST:
+        player_list = response[1]
+        print(player_list)
 
-        game_socket.close()
-        server_socket.close()
-    else:  # the other player is the server (you are player 2)
-        game_socket = socket()
-        game_socket.connect((ip, port))
 
-        # TODO: communicate with player 1 through game_socket
-        game_socket.send("asdf".encode())
+def main():
+    op = int(input("1. Fazer login\n2. Fazer cadastro\n\n0. Sair\n\n: "))
 
-        game_socket.close()
+    if op == 0:
+        return
+
+    token = None
+    username = input("\n\nNome de usuário: ")
+    password = input("Senha: ")
+    if op == 1:
+        token = login(username, password)
+    elif op == 2:
+        name = input("Nome completo: ")
+        token = register(username, password, name)
+
+    while True:
+        op = int(
+            input(
+                "\n\n"
+                "1. Procurar partida\n"
+                "2. Listar usuários online\n"
+                "2. Listar partidas em andamento\n\n"
+                "0. Sair"
+                "\n\n: "
+            )
+        )
+
+        match_addr_info = ()
+        if op == 1:
+            match_addr_info = look_for_match(token, username)
+        elif op == 2:
+            list_players(token, username)
+            continue
+        elif op == 3:
+            continue
+        elif op == 0:
+            break
+        ip, port, server_port = match_addr_info
+
+        print(f"other player @ {ip}:{port}")
+
+        if server_port:  # you are the server (player 1)
+            server_socket = socket(AF_INET, SOCK_STREAM)
+            server_socket.bind(("", server_port))
+            server_socket.listen(1)
+            game_socket, _ = server_socket.accept()
+
+            # TODO: communicate with player 2 through game_socket
+            msg = game_socket.recv(1024).decode()
+            print(msg)
+
+            game_socket.close()
+            server_socket.close()
+        else:  # the other player is the server (you are player 2)
+            game_socket = socket()
+            game_socket.connect((ip, port))
+
+            # TODO: communicate with player 1 through game_socket
+            game_socket.send("asdf".encode())
+
+            game_socket.close()
+
+    logout(token, username)
 
 
 if __name__ == "__main__":
