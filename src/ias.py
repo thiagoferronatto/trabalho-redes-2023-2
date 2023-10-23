@@ -16,8 +16,8 @@ IAS_MAX_PASSWORD_LENGTH = 256
 IAS_MAX_NAME_LENGTH = 1024
 IAS_BACKLOG_SIZE = 8
 
-IAS_USERS_DB_PATH = "users.db"
-IAS_LOG_FILE_PATH = "ias.log"
+IAS_USERS_DB_PATH = "../data/users.db"
+IAS_LOG_FILE_PATH = "../log/ias.log"
 IAS_USERS_DB_SEP = "|||"
 
 
