@@ -19,7 +19,7 @@ from socket import *
 from style import *
 
 
-MMS_LOG_FILE_PATH = "mms.log"
+MMS_LOG_FILE_PATH = "../log/mms.log"
 
 
 class LogMessage:
