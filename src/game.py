@@ -1,12 +1,30 @@
+"""
+game.py
 
-import os
-import sys
-#sys.path.insert(0, 'pyray')
-#import pyray as rl
+Autores: Thiago Ferronatto and Yuri Moraes Gavilan
+
+Esse arquivo contem a classe GameState e o dicionário type_effectiveness para um jogo de Pokémon.
+
+A classe GameState representa o estado de um jogo Pokémon, incuindo a Pokédex,
+os jogadores, e suas equipes. Também oferece métodos para adição, consulta, remoção, entre outras operações
+necessárias para a execução de uma partida.
+
+"""
+
+
 import json
 import random
-from threading import Thread
-import socket
+
+
+
+
+"""
+Essa variável type_effectiveness é um dicionário que representa se um Pokémon possui um tipo que domina
+o Pokémon pertencente a outro tipo; por exemplo: um Pokémon de fogo irá aplicar duas vezes mais dano em Pokémon de tipo grama, gelo, inseto, etc.
+Assim como alguns Pokémon também são completamente imúnes a outros. Exemplo: um Pokémon fantasma é imune a um Pokémon do tipo lutador.
+Esse dicionário será consultado pelo método GameState::calculate_damage(), onde um multiplicador será gerado a partir da combinação de todos os tipos
+de um Pokémon A com outro Pokémon B (afinal, um Pokémon pode ter mais de um tipo).
+"""
 
 type_effectiveness = {
   "Normal": {"Rock": 0.5, "Ghost": 0, "Steel": 0.5},
@@ -29,21 +47,32 @@ type_effectiveness = {
   "Fairy": {"Fire": 0.5, "Ice": 2, "Fighting": 0.5, "Dragon": 2, "Dark": 2, "Steel": 0.5},
 }
 
-
-
 class GameState():
   def __init__(self):
+    # A Pokédex é a base de dados com todos os Pokémon
     self.pokedex = self.load_objects()
+    
+    # Aqui iniciamos uma lista de jogadores (nesse caso, dois).
     num_jogadores  = 2
     self.player = [{"pokemon": [], "hp_data": [], "name": str} for _ in range(num_jogadores)]
   
   def load_objects(self):
+    """
+    Carrega a base de dados do arquivo pokedex.json
+    Returns:
+      Lista de todos os Pokémon do arquivo pokedex.json
+    """
+    # 
     with open('../data/pokedex.json', 'r') as f:
       objects = json.loads(f.read())
-    # TODO: Load sprites?
     return objects
   
   def print_poke(self, poke):
+    """
+    Imprime os dados detalhados de um Pokémon.
+    Args:
+      poke: dado de um Pokémon assim como ele é lido da Pokédex.
+    """
     print(f"Pokemon ID: {poke['id']}")
     print(f"Pokemon name: {poke['name']['english']}")
     print(f"Pokemon stats:")
@@ -55,6 +84,11 @@ class GameState():
     print("==========================================")
 
   def print_party(self, party):
+    """
+    Imprime os dados detalhados de todos os Pokémon de um time.
+    Args:
+      party: lista de dados de Pokémon.
+    """
     for poke in party:
       self.print_poke(poke)
   
@@ -68,84 +102,61 @@ class GameState():
       self.player[player_id]["hp_data"].append(poke["base"]["HP"])
   
   def push_pokemon(self, player_id, pokemon_data):
+    """
+    Adiciona um Pokémon específico ao time de um jogador.
+    Args:
+      player_id: ID do jogador que terá o Pokémon adicionado ao seu time.
+      pokemon_data: Dados do Pokémon que será adicionado ao time do jogador.
+    """
     self.player[player_id]["pokemon"].append(pokemon_data)
     self.player[player_id]["hp_data"].append(pokemon_data["base"]["HP"])
   
   def remove_pokemon(self, player_id, pokemon_id):
+    """
+    Remove um Pokémon específico do time de um jogador (caso ele faça parte).
+    Args:
+      player_id: ID do jogador que terá o Pokémon removido do seu time.
+      pokemon_id: ID do Pokémon que será removido do time do jogador.
+    """
     for index, pokemon in enumerate(self.player[player_id]["pokemon"]):
       if pokemon["id"] == pokemon_id:
         del self.player[player_id]["pokemon"][index]
   
   def get_pokemon_by_id(self, pokemon_id):
+    """
+    Descobre os dados de um Pokémon a partir de um ID.
+    Args:
+      pokemon_id: ID do Pokémon a ser consultado.
+    Returns:
+      Os dados detalhados do Pokémon consultado.
+    """
     for index, pokemon in enumerate(self.pokedex):
       if pokemon["id"] == pokemon_id:
         return pokemon
   
   def get_pokemon_by_name(self, pokemon_name):
+    """
+    Descobre os dados de um Pokémon a partir de um nome.
+    Args:
+      pokemon_name: Nome do Pokémon a ser consultado.
+    Returns:
+      Os dados detalhados do Pokémon consultado.
+    """
     for index, pokemon in enumerate(self.pokedex):
         current_name = str(pokemon["name"]["english"]).lower()
         pokemon_name = str(pokemon_name).lower()
         if current_name == pokemon_name:
           return pokemon
   
-  def simulate_battle(self):
-    player_a = self.player[0]
-    player_b = self.player[1]
-    
-    if len(player_a) == 0 or len(player_b) == 0:
-      print(f"One of the parties is empty! :(")
-      return
-    pokemons = [player_a["pokemon"], player_b["pokemon"]]
-
-    hps = []
-    hps.append(pokemons[0][0]['base']['HP'])
-    hps.append(pokemons[1][0]['base']['HP'])
-
-    turn = 0
-    while len(pokemons[0]) > 0 and len(pokemons[1]) > 0:
-      print(f"Currently battling pokemon: {pokemons[0][0]['name']['english']} and {pokemons[1][0]['name']['english']}")
-      while hps[0] > 0 and hps[1] > 0:
-        pokemon_to_attack = pokemons[0][0] if turn == 0 else pokemons[1][0]
-        pokemon_to_be_attacked = pokemons[1][0] if turn == 0 else pokemons[0][0]
-        
-        current_damage = self.calculate_damage(pokemon_to_attack, pokemon_to_be_attacked)
-        print(f"{pokemon_to_attack['name']['english']} caused {current_damage} to {pokemon_to_be_attacked['name']['english']}")
-        turn = 0 if turn == 1 else 1
-        hps[turn] -= current_damage
-      for i in range(0,2):
-        if hps[i] < 0:
-          print(f"{pokemons[i][0]['name']['english']} was defeated!")
-          del pokemons[i][0]
-          if len(pokemons[i]) > 0:
-            hps[i] = pokemons[i][0]['base']['HP']
-    for i in range(0,2):
-      if len(pokemons[i]) > 0:
-        print(f"Trainer {i} won!")
-  
-  # Função para adicionar um Pokémon individual (ETAPA 1)
-  def add_individual_pokemon(self):
-    print("Digite o id ou nome do Pokémon:")
-    pokemon_id = input()
-    # Implemente a lógica para adicionar o Pokémon
-    if pokemon_id.isdigit():
-      pokemon = self.get_pokemon_by_id(int(pokemon_id))
-    elif pokemon_id == None:
-      print(f'Digite o um valor válido!')
-      return 1
-    else:
-      pokemon = self.get_pokemon_by_name(pokemon_id)
-    
-    print(f"O Pokémon que você escolheu é")
-    self.print_poke(pokemon)
-    print("Confirma? [s/n]")
-    resposta = input()
-    if resposta.lower() == "s":
-      self.push_pokemon(0, pokemon)
-      return 0  # Retorna à etapa 0
-    else:
-      return 1  # Volta à etapa 1
 
   def translate_party_to_pokemon_data(self, party):
+    """
+    Tradus uma lista de IDs para lista de dados de Pokémon.
+    Args:
+      party: lista de IDs de Pokémon
+    Returns:
+      Lista de dados de Pokémon.
+    """
     result = []
     for p in party:
       result.append(self.get_pokemon_by_id(int(p)))
@@ -174,8 +185,40 @@ class GameState():
     else:
       return False
 
+  def add_individual_pokemon(self):
+    """
+    Método auxiliar do menu para a ação de adicionar Pokémon individual
+    Returns:
+      Próximo passo a ser executado no menu.
+    """
+    print("Digite o id ou nome do Pokémon:")
+    pokemon_id = input()
+    # Implemente a lógica para adicionar o Pokémon
+    if pokemon_id.isdigit():
+      pokemon = self.get_pokemon_by_id(int(pokemon_id))
+    elif pokemon_id == None:
+      print(f'Digite o um valor válido!')
+      return 1
+    else:
+      pokemon = self.get_pokemon_by_name(pokemon_id)
+    
+    print(f"O Pokémon que você escolheu é")
+    self.print_poke(pokemon)
+    print("Confirma? [s/n]")
+    resposta = input()
+    if resposta.lower() == "s":
+      self.push_pokemon(0, pokemon)
+      return 0  # Retorna à etapa 0
+    else:
+      return 1  # Volta à etapa 1
+
   # Função para adicionar uma party inteira (ETAPA 2)
   def adicionar_party(self):
+    """
+    Método auxiliar do menu para a ação de adicionar party inteira.
+    Returns:
+      Próximo passo a ser executado no menu.
+    """
     print("Digite os ids dos 6 Pokémon:")
     ids_pokemons = input().split()
     
@@ -199,6 +242,14 @@ class GameState():
       return 0  # Volta à etapa 0
 
   def calculate_type_effectiveness(self, pokemon_a_types, pokemon_b_types):
+    """
+    Calcula o multiplicador de efetividade de tipo.
+    Args:
+      pokemon_a_types: Lista de tipos do Pokémon A
+      pokemon_b_types: Lista de tipos do Pokémon B
+    Returns:
+      Multiplicador de efetividade.
+    """
     result = 1.0
     # aqui checamos em cada entrada do dicionário para verificar os multiplicadores de tipo
     for ef_a in pokemon_a_types:
@@ -206,11 +257,19 @@ class GameState():
         result *= type_effectiveness[ef_a].get(ef_b, 1.0) # caso não haja nenhuma entrada no dicionário para o tipo atual, multiplicamos por 1.0
 
     if result > 1.0:
-      print("Attack was super effective!")
+      print("O ataque foi super efetivo!")
     return result
 
   # Aqui calculamos o dano aplicado de um pokemon ao outro, de acordo com a fórmula descrita em https://bulbapedia.bulbagarden.net/wiki/Damage
   def calculate_damage(self, pokemon_a, pokemon_b):
+    """
+    Cálcula o dano de um Pokémon A a um Pokémon B, de acordo com a fórmula descrita no link acima.
+    Args:
+      pokemon_a: Dados do Pokémon A (Atacante)
+      pokemon_b: Dados do Pokémon B (Defensor)
+    Returns:
+      Dano causado ao Pokémon B.
+    """
     modifier = random.uniform(0.01, 1.00)
     critical = 2 if modifier > 0.15 else 1 # se o numero aleatório for menor que 0.15, o dano crítico será aplicado (15% de chance)
     effectiveness = self.calculate_type_effectiveness(pokemon_a['type'], pokemon_b['type']) # calculando o multiplicador de efetividade de tipos
@@ -223,12 +282,22 @@ class GameState():
 
   # Função para listar todos os Pokémon (ETAPA 3)
   def listar_pokemon(self):
+    """
+    Método auxiliar do menu para a ação de listar todos os Pokémon.
+    Returns:
+      Próximo passo a ser executado no menu.
+    """
     for o in self.pokedex:
       print(f"{o['id']} - {o['name']['english']}")
     return 0  # Volta à etapa 0
 
   # Função para consultar dados de um Pokémon específico (ETAPA 4)
   def consultar_pokemon(self):
+    """
+    Método auxiliar do menu para a ação de consultar um Pokémon específico.
+    Returns:
+      Próximo passo a ser executado no menu.
+    """
     print("Digite o id ou nome do Pokémon:")
     id_ou_nome = input()
     pokemon_data = None
@@ -241,6 +310,12 @@ class GameState():
 
   # Função principal
   def menu(self):
+    """
+    Menu de jogo, aqui o jogador será apresentado as opções possíveis.
+    Returns:
+      0 caso seja para finalizar o jogo, ou 1, caso contrário.
+    """
+    
     etapa = 0  # Inicia na etapa 0
 
     previous_party_size = 0
@@ -300,7 +375,15 @@ class GameState():
           break
     return 1
 
+
   def get_ids_from_party(self, party):
+    """
+    Traduz uma lista de Pokémon para uma lista de IDs.
+    Args:
+      party: Lista de Pokémon.
+    Returns:
+      Lista de IDs relacionados aos Pokemon de 'party' (e na mesma ordem).
+    """
     ids = []
     for poke in party:
       ids.append(poke["id"])
