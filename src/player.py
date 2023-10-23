@@ -415,13 +415,23 @@ def run_battle(game_socket: socket, my_turn: bool):
 
     print(Style.blue(f"Seu adversário é: \"{game_state.player[1]['name']}\""))
     while game_running:
-        time.sleep(0.5)
+        time.sleep(
+            0.5
+        )  # A thread dorme por 0.5 segundos para simular a experiência de uma batalha Pokémon em turnos.
 
-        player_current_pokemon = game_state.player[0]["pokemon"][0]
-        enemy_current_pokemon = game_state.player[1]["pokemon"][0]
+        player_current_pokemon = game_state.player[0]["pokemon"][
+            0
+        ]  # Atual Pokémon do jogador
+        enemy_current_pokemon = game_state.player[1]["pokemon"][
+            0
+        ]  # Atual Pokémon do adversário
 
-        # Enviamos as mensagens de dano
         if my_turn:
+            """
+            Caso my_turn seja verdadeiro, o jogador local será o responsável por atacar.
+            Calculamos o dano localmente, e o enviamos ao outro jogador.
+            Após isso, imprimimos a mensagem de quanto dano foi causado ao Pokémon adversário.
+            """
             damage_dealt = game_state.calculate_damage(
                 player_current_pokemon, enemy_current_pokemon
             )
@@ -441,6 +451,11 @@ def run_battle(game_socket: socket, my_turn: bool):
                 f"Seu {player_current_pokemon['name']['english']} ({player_hp_text} HP) causou {damage_dealt:.2f} de dano em {enemy_current_pokemon['name']['english']} ({enemy_hp_text} HP)"
             )
         else:
+            """
+            Caso my_turn seja falso, o jogador adversário será o responsável por atacar.
+            Esperamos pela mensagem no socket, e, ao recebê-la, atualizamos o estado local.
+            Após isso, imprimimos a mensagem de quanto dano foi causado ao Pokémon local.
+            """
             damage_received_message = game_socket.recv(1024).decode()
             game_state.player[0]["hp_data"][0] -= float(damage_received_message)
 
@@ -548,40 +563,59 @@ def main():
 
         your_party = game_state.player[0]["pokemon"]
 
+        """
+        Um dos jogadores inicia como 'servidor', ou seja, inicia esperando a abordagem do outro jogador que atua como 'cliente', algo que irá se alternando.
+        Inicialmente, os jogadores trocam mensagens para compartilhar entre si os dados locais: o nome dos jogadores e o time de cada um deles. Estes dados são, então,
+        armazenados localmente em game_state.
+        """
+
         if server_port:  # you are the server (player 1)
+            # Aqui fazemos a conexão com o outro jogador
             server_socket = socket(AF_INET, SOCK_STREAM)
             server_socket.bind(("", server_port))
             server_socket.listen(1)
             game_socket, _ = server_socket.accept()
 
+            # Armazenamos o username do jogador local
             game_state.player[0]["name"] = username
+
+            # Armazenamos o username do adversário
             game_state.player[1]["name"] = game_socket.recv(1024).decode()
 
+            # Enviamos o username do jogador local ao adversário
             game_socket.send(username.encode())
 
             # ================== PREPARATION =====================
-            # TODO: communicate with player 2 through game_socket
 
-            # RECEIVE PARTY
+            # Recebemos o time do adversário (lista de IDs de Pokémon)
             opponent_party = game_socket.recv(1024)
+            # Usamos o pickle apenas para desserializar os dados recebidos
             opponent_party = pickle.loads(opponent_party)
 
+            # Traduzimos os IDs em uma lista de Pokémon
             opponent_party = game_state.translate_party_to_pokemon_data(opponent_party)
-            game_state.print_party(opponent_party)
 
+            # Adicionamos o time ao estado local
             game_state.add_party_to_player(opponent_party, 1)
 
-            # SEND PARTY
+            # Obtemos uma lista de IDs a partir do nosso time local.
             your_party_ids = game_state.get_ids_from_party(your_party)
+
+            # Serializamos a lista de IDs para enviar pelo socket.
             data = pickle.dumps(your_party_ids)
+
+            # Enviamos a lista pelo socket
             game_socket.send(data)
 
             # ================== GAME BEGINS =====================
+
+            # Não iniciamos jogando, e damos inicio à partida.
             my_turn = False
             run_battle(game_socket, my_turn)
 
             # ================== GAME ENDS =====================
 
+            # O socket é fechado
             game_socket.close()
             server_socket.close()
 
@@ -592,27 +626,34 @@ def main():
             game_socket = socket()
             game_socket.connect((ip, port))
 
+            # Enviamos o nosso username ao adversário, recebemos o username dele, e armazenamos os dados localmente
             game_socket.send(username.encode())
             game_state.player[0]["name"] = username
             game_state.player[1]["name"] = game_socket.recv(1024).decode()
 
             # ================== PREPARATION =====================
 
-            # SEND PARTY
+            # Obtemos uma lista de IDs a partir do nosso time local.
             your_party_ids = game_state.get_ids_from_party(your_party)
+            # Serializamos a lista de IDs para enviar pelo socket.
             data = pickle.dumps(your_party_ids)
+            # Enviamos a lista pelo socket
             game_socket.send(data)
 
-            # RECEIVE PARTY
+            # Recebemos o time do adversário (lista de IDs de Pokémon)
             opponent_party = game_socket.recv(1024)
+            # Usamos o pickle apenas para desserializar os dados recebidos
             opponent_party = pickle.loads(opponent_party)
 
+            # Traduzimos os IDs em uma lista de Pokémon
             opponent_party = game_state.translate_party_to_pokemon_data(opponent_party)
-            game_state.print_party(opponent_party)
 
+            # Adicionamos o time ao estado local
             game_state.add_party_to_player(opponent_party, 1)
 
             # ================== GAME BEGINS =====================
+
+            # Iniciamos jogando, e damos inicio à partida.
             my_turn = True
             run_battle(game_socket, my_turn)
 
