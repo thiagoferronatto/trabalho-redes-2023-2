@@ -2,3 +2,5 @@ __pycache__
 .vscode
 *.db
 *.log
+relatorio/*.synctex.gz
+relatorio/*.aux
