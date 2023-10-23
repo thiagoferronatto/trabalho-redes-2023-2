@@ -317,10 +317,13 @@ def main():
         name = input("Nome completo: ")
         token = register(username, password, name)
 
-    
-    game_state.menu()
 
     while True:
+        for i in range(0, 2):
+            game_state.player[i]['pokemon'].clear()
+        
+        game_state.menu()
+        
         op = int(
             input(
                 "\n\n"
