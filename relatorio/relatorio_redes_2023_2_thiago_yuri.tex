@@ -1,0 +1,190 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mlmodern}
+\usepackage[brazil]{babel}
+\usepackage{multicol}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{enumitem}
+
+\title{\textsc{Relatório do Trabalho Prático}\\\textsc{\Huge Pokémon Netventure}\\{Redes de Computadores (2023-2)}}
+\author{Thiago Ferronatto\\Yuri Moraes Gavilan}
+\date{\today}
+
+\newcommand{\iasPort}{1234}
+\newcommand{\mmsPort}{1235}
+
+\begin{document}
+  \maketitle
+  \begin{multicols}{2}
+    \section{Introdução}
+    
+    O Pokémon Netventure (PokéNet) é um jogo ao espírito dos clássicos do Game Boy. Dois jogadores têm a chance de se enfrentar em batalha com a ajuda de seus monstrinhos de bolso, tudo isso à distância, já que a ação foi criada com o aspecto \textit{multiplayer online} em mente.
+    
+    Para iniciar sua jornada rumo ao título de mestre Pokémon, você vai precisar de uma conta; para isso, basta escolher um nome de usuário e uma senha, além de nos contar seu nome completo. Depois disso, o caminho estará aberto à sua frente!
+    
+    Ao entrar no jogo, você poderá formar sua equipe de Pokémons e, em seguida, procurar um adversário à sua altura utilizando o mais novo sistema de criação de partidas do gênero, permitindo que você não tenha que se preocupar com encontrar um oponente; nós fazemos isso por você!
+    
+    \section{Visão técnica}
+    
+    A arquitetura lógica utilizada divide o domínio da aplicação em três partes: um servidor de autenticação, um servidor de \textit{matchmaking}, e clientes.
+    
+    \subsection{Servidor de Autenticação e Informação (SAI)}
+    
+    O SAI tem como propósito autenticar usuários antes que eles possam prosseguir para o servidor de \textit{matchmaking}. Isso engloba a realização de cadastros, \textit{logins}, \textit{logouts} e algumas outras operações extras. O uso do SAI, no entanto, não é limitado aos clientes: o servidor de \textit{matchmaking} também faz uso de suas funcionalidades para autenticar jogadores em várias ocasiões.
+    
+    O SAI responde a pedidos via TCP e, por padrão, escuta por requisições na porta \iasPort\ do servidor onde opera\footnote{A título da simplicidade, durante todo o desenvolvimento tal servidor foi a máquina local, acessada pelo endereço de \textit{loopback}.}. É recomendado que uma conexão segura seja utilizada em qualquer comunicação com o SAI, tendo em vista a natureza das informações transeuntes. Requisições ao SAI seguem o seguinte formato: \texttt{opcode|||args}. Um \texttt{opcode} representa uma operação que o SAI pode realizar; cada operação leva diferentes argumentos, descritos no campo \texttt{args} como uma lista separada por espaços. Segue as descrições das operações disponíveis.
+    
+    \subsubsection{\texttt{AUTHENTICATE}}
+    
+    Representa uma operação de \textit{login}. Os argumentos requeridos são um nome de usuário e uma senha. As possíveis respostas do SAI para uma requisição \texttt{AUTHENTICATE} bem-formada são
+    
+    \begin{itemize}
+      \item \texttt{LOGIN\_SUCCESSFUL}, que sinaliza um \textit{login} bem-sucedido, e
+      \item \texttt{LOGIN\_FAILED}, que sinaliza alguma falha no processo.
+    \end{itemize}
+    
+    \subsubsection{\texttt{REGISTER}}
+    
+    Representa uma operação de cadastro. Os argumentos requeridos são um nome de usuário, uma senha e um nome pessoal. As possíveis respostas do SAI para uma requisição \texttt{REGISTER} bem-formada são
+    
+    \begin{itemize}
+      \item \texttt{REGISTRATION\_SUCCESSFUL}, que sinaliza um cadastro bem-sucedido, e
+      \item \texttt{USER\_ALREADY\_EXISTS}, que sinaliza que o usuário em questão já está cadastrado no banco de dados.
+    \end{itemize}
+    
+    \subsubsection{\texttt{VERIFY}}
+    
+    Representa uma operação de verificação de \textit{login}. Os argumentos requeridos são um \textit{token} de autenticação e um nome de usuário. As possíveis respostas do SAI para uma requisição \texttt{VERIFY} bem-formada são
+    
+    \begin{itemize}
+      \item \texttt{VERIFICATION\_SUCCESSFUL}, que sinaliza que o usuário está devidamente logado e autenticado, e
+      \item \texttt{VERIFICATION\_FAILED}, que sinaliza alguma falha no processo.
+    \end{itemize}
+    
+    \subsubsection{\texttt{LOGOUT}}
+    
+    Representa uma operação de \textit{logout}. Os argumentos requeridos são um \textit{token} de autenticação e um nome de usuário. As possíveis respostas do SAI para uma requisição \texttt{LOGOUT} bem-formada são
+    
+    \begin{itemize}
+      \item \texttt{LOGOUT\_SUCCESSFUL}, que sinaliza que o usuário não está mais logado, e
+      \item \texttt{LOGOUT\_FAILED}, que sinaliza alguma falha no processo.
+    \end{itemize}
+    
+    \subsubsection{\texttt{LIST\_USERS}}
+    
+    Representa uma operação de listagem dos usuários logados em determinado instante. Essa requisição não leva argumentos. A única possível resposta do SAI para uma requisição \texttt{LIST\_USERS} bem-formada é \texttt{USER\_LIST}, que acompanha a lista solicitada e sinaliza um fornecimento bem-sucedido.
+    
+    \subsection{Servidor de \textit{Matchmaking} (SMM)}
+    
+    O objetivo do SMM é criar partidas entre duplas de jogadores autenticados pelo SAI. Para tal, ele mantém uma fila de usuários que desejam jogar; quando essa fila tem dois ou mais usuários, os dois localizados na frente da fila são contatados pelo SMM para confirmar a criação da partida. Caso algum deles recuse, este será removido da fila, enquanto o outro continuará ali. Caso ambos aceitem, eles são removidos da fila, e as informações de um são enviadas ao outro pelo SMM para que a partida aconteça via P2P entre ambos.
+    
+    Requisições ao SMM, que está disponível pela porta \mmsPort\ na máquina em que opera, são feitas via UDP, mas seguem o mesmo formato das feitas ao SAI, porém, aqui, os argumentos são sempre um token de autenticação do SAI e um nome de usuário; ao realizar qualquer operação, o SMM se comunica com o SAI para determinar a validade da sessão do usuário que a solicitou. Se a sessão for inválida, o SMM sempre irá responder ao usuário com \texttt{USER\_NOT\_AUTHENTICATED}. A seguir se encontram as operações realizadas pelo SMM.
+    
+    \subsubsection{\texttt{MAKE\_AVAILABLE}}
+    
+    Representa uma operação de inserção na fila de \textit{matchmaking}; um usuário está ``se fazendo disponível'' para partidas. A única resposta do SMM para uma requisição \texttt{MAKE\_AVAILABLE} bem-formada, supondo que o usuário seja devidamente validado pelo SAI, é \texttt{IN\_QUEUE}, que sinaliza que o usuário está na fila esperando por uma partida.
+    
+    \subsubsection{\texttt{MAKE\_UNAVAILABLE}}
+    
+    Representa uma operação de remoção da fila de \textit{match\-mak\-ing}; um usuário deseja encerrar sua busca por partidas. A única resposta do SMM para uma requisição \texttt{MAKE\_UNAVAILABLE} bem-formada, supondo que o usuário seja devidamente validado pelo SAI, é \texttt{OUT\_OF\_QUEUE}, que sinaliza que o usuário foi removido da fila com sucesso.
+    
+    \subsubsection{\texttt{ACCEPT\_MATCH}}
+    
+    Representa o aceite de uma partida previamente oferecida pelo SMM. A única resposta do SMM para uma requisição \texttt{ACCEPT\_MATCH} bem-formada, supondo que o usuário seja devidamente validado pelo SAI, é \texttt{MATCH\_READY}, que acompanha os dados do segundo jogador e sinaliza que a partida está pronta para começar; os dados da relevantes são inseridos na lista de partidas ativas.
+    
+    \subsubsection{\texttt{DECLINE\_MATCH}}
+    
+    Representa a recusa de uma partida previamente oferecida pelo SMM. A única resposta do SMM para uma requisição \texttt{DECLINE\_MATCH} bem-formada, supondo que o usuário seja devidamente validado pelo SAI, é \texttt{FAILED\_TO\_ACCEPT}, que sinaliza que o jogador não aceitou a partida que lhe foi oferecida e, portanto, será removido da fila.
+    
+    \subsubsection{\texttt{LIST\_PLAYERS}}
+    
+    Operação deprecada; não utilizar.
+    
+    \subsubsection{\texttt{LIST\_MATCHES}}
+    
+    Representa uma listagem das partidas ativas no momento do pedido. A única resposta do SMM para uma requisição \texttt{LIST\_MATCHES} bem-formada, supondo que o usuário seja devidamente validado pelo SAI, é \texttt{MATCH\_LIST}, que acompanha a lista solicitada e sinaliza um fornecimento bem-sucedido.
+    
+    \subsubsection{\texttt{MATCH\_ENDED}}
+    
+    Representa um aviso de um jogador, informando que a partida em que ele estava envolvido acabou; o SMM pode, agora, remover tal partida da lista de partidas ativas. A única resposta do SMM para uma requisição \texttt{MATCH\_ENDED} bem-formada, supondo que o usuário seja devidamente validado pelo SAI, é \texttt{MATCH\_ENDED}, que sinaliza uma operação bem-sucedida.
+    
+    \subsection{Clientes}
+    
+    Os clientes, aqui, tratam de toda a lógica do jogo em si. Menus são mostrados na tela, fornecendo opções de autenticação e de requisições a ambos os servidores. Quando uma partida é aceitada por dois jogadores pelo SMM, uma interface gráfica é mostrada na aplicação cliente para que o usuário tenha um guia visual para escolher sua equipe. Após a escolha das equipes, a simulação da batalha é iniciada. A conexão entre clientes é direta (P2P) e estabelecida sobre o TCP.
+    
+    \subsection{Sequência de eventos}
+    
+    Em um mundo ideal, a seguinte sequência é um bom exemplo de como um cenário alvo de uso ocorreria.
+    
+    \begin{enumerate}
+      \item SAI é iniciado;
+      \item SMM é iniciado;
+      \item $c_1$ é iniciado;
+      \item $c_1$ envia \texttt{REGISTER} ao SAI;
+      \item SAI cadastra $c_1$;
+      \item Caso o resultado seja \texttt{REGISTRATION\_SUCCESSFUL}, o SAI automaticamente realiza a operação \texttt{AUTHENTICATE} com os dados de $c_1$;
+      \item SAI envia \texttt{LOGIN\_SUCCESSFUL} a $c_1$, juntamente a um \textit{token} $t_1$;
+      \item $c_1$ utiliza $t_1$ para enviar \texttt{MAKE\_AVAILABLE} ao SMM;
+      \item SMM envia \texttt{IN\_QUEUE} a $c_1$;
+      \item $c_2$ é iniciado;
+      \item $c_2$ envia \texttt{REGISTER} ao SAI;
+      \item SAI cadastra $c_2$;
+      \item Caso o resultado seja \texttt{REGISTRATION\_SUCCESSFUL}, o SAI automaticamente realiza a operação \texttt{AUTHENTICATE} com os dados de $c_2$;
+      \item SAI envia \texttt{LOGIN\_SUCCESSFUL} a $c_2$, juntamente a um \textit{token} $t_2$;
+      \item $c_2$ utiliza $t_2$ para enviar \texttt{MAKE\_AVAILABLE} ao SMM;
+      \item SMM envia \texttt{IN\_QUEUE} a $c_2$;
+      \item SMM envia \texttt{MATCH\_AVAILABLE} a $c_1$;
+      \item SMM envia \texttt{MATCH\_AVAILABLE} a $c_2$;
+      \item $c_1$ envia \texttt{ACCEPT\_MATCH} ao SMM;
+      \item $c_2$ envia \texttt{ACCEPT\_MATCH} ao SMM;
+      \item SMM envia \texttt{MATCH\_READY} a $c_1$;
+      \item SMM envia \texttt{MATCH\_READY} a $c_2$;
+      \item $c_1$ abre uma conexão P2P via TCP com $c_2$;
+      \item A partida progride entre $c_1$ e $c_2$ até seu fim;
+      \item A conexão entre $c_1$ e $c_2$ é encerrada;
+      \item $c_1$ envia \texttt{MATCH\_ENDED} ao SMM;
+      \item $c_1$ envia \texttt{LOGOUT} ao SAI;
+      \item $c_2$ envia \texttt{LOGOUT} ao SAI;
+      \item SAI envia \texttt{LOGOUT\_SUCCESSFUL} a $c_1$;
+      \item SAI envia \texttt{LOGOUT\_SUCCESSFUL} a $c_2$;
+      \item $c_1$ é encerrado;
+      \item $c_2$ é encerrado;
+      \item SMM é encerrado;
+      \item SAI é encerrado.
+    \end{enumerate}
+    
+    \section{\textit{Features} implementadas}
+    
+    Todos os itens da descrição do trabalho foram implementados -- embora haja diferenças no modo pelo qual tais objetivos foram atingidos -- exceto pelas observações F e G.
+    
+    \subsection{\textit{Features} extras}
+    
+    As diferenças mencionadas se dão na forma do SMM. Como há, aqui, um servidor que lida com todos os jogadores interessados, não há necessidade de contato cliente-cliente antes de a partida ser iniciada. Tal abordagem é uma evolução natural da clássica ``lista \textit{free for all}'' utilizada em jogos mais antigos; o \textit{match\-mak\-ing} retira dos usuários o trabalho de procurar manualmente por uma partida, delegando tal função a um servidor especializado. Isso é amplamente utilizado no contexto hodierno; alguns exemplos de jogos que empregam tal estratégia são: Counter-Strike\texttrademark\ 2, Valorant\texttrademark, Apex Legends\texttrademark\ etc.
+    
+    Um servidor de \textit{matchmaking} também permite que outros fatores sejam levados em conta no momento da criação de uma partida, como a habilidade dos jogadores -- sistemas reais implementam modificações do sistema de Elo do xadrez, como o Glicko-2, a fim de medir a habilidade de seus jogadores e criar partidas mais coerentes --, para tornar o ambiente competitivo o mais justo possível. Isso simplesmente não é possível quando são os clientes que escolhem seus oponentes.
+    
+    A natureza dessa tática torna alguns aspectos, que sem ela seriam absolutamente necessários, obsoletos. Um exemplo é a listagem de jogadores; isso não é mais requerido, já que quem decide os participantes de uma partida é o servidor. Ainda assim, implementamos essa funcionalidade por meio do SAI; ele fornece uma lista de jogadores atualmente \textit{online}, porém, com seus IPs e portas omitidos, já que não são relevantes para o jogo.
+    
+    \section{Instruções}
+    
+    Aqui é detalhado o processo de preparação e de execução dos programas.
+    
+    \subsection{Preparação}
+    
+    É necessário que o Python 3 esteja instalado nas máquinas que irão executar os \textit{scripts}; mais especificamente, recomenda-se que a versão mais recente\footnote{No momento da escrita, essa seria a versão 3.12.} esteja presente.
+    
+    Uma biblioteca também é necessária para a execução do SAI: Argon2; ela é responsável por criar um \textit{hash} seguro -- estado-da-arte, para ser mais preciso -- para o armazenamento das senhas dos usuários.
+    
+    \subsection{Execução}
+    
+    O projeto é composto por três arquivos principais: \texttt{ias.py}, \texttt{mms.py} e \texttt{player.py}, representando, respectivamente, o SAI, o SMM, e o cliente. O SAI e o SMM podem ser iniciados em qualquer ordem, desde que os clientes só sejam iniciados depois de ambos os servidores estarem disponíveis.
+    
+    Daí em diante, basta escolher as opções desejadas no menu do cliente. Os servidores mantêm um \textit{log}, tanto no terminal em que executam quanto em arquivos (\texttt{ias.log}, \texttt{mms.log}), dos eventos encadeados pelos clientes.
+    
+    \section{Código}
+    
+    Todo o código, que foi desenvolvido em conjunto pelos autores, está disponível publicamente no repositório \texttt{thiagoferronatto/trabalho-redes-2023-2}, no GitHub. Por ali, também pode ser observada a distribuição de tarefas feita entre os desenvolvedores por meio dos \textit{commits} efetuados.
+  \end{multicols}
+\end{document}
