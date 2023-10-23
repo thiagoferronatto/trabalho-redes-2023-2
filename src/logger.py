@@ -5,6 +5,7 @@ A logger to print troubleshooting information to a file
 
 from style import *
 from datetime import *
+from os import path, makedirs
 
 
 class Logger:
@@ -19,6 +20,8 @@ class Logger:
     INPUT = 3
     NONE = 4
 
+    DIR = "../log"
+
     def __init__(__self__, log_file):
         """
         Initializes a logger object with a given log file.
@@ -28,7 +31,9 @@ class Logger:
         log_file : str
             The name of the file to write the log messages.
         """
-        __self__.file = open(log_file, "a", encoding="utf-8")
+        if not path.exists(Logger.DIR):
+            makedirs(Logger.DIR)
+        __self__.file = open(f"{Logger.DIR}/{log_file}", "a", encoding="utf-8")
 
     def __del__(__self__):
         """
