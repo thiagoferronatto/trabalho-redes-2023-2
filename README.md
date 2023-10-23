@@ -18,7 +18,7 @@
 ```
 trabalho-redes-2023-2$ python -m pip install argon2-cffi
 trabalho-redes-2023-2$ python ias.py &
-
+trabalho-redes-2023-2$ python mms.py &
 trabalho-redes-2023-2$ python player.py
 ```
 
