@@ -38,7 +38,7 @@ class GameState():
     self.player = [{"pokemon": [], "hp_data": [], "name": str} for _ in range(num_jogadores)]
   
   def load_objects(self):
-    with open('pokedex.json', 'r') as f:
+    with open('../data/pokedex.json', 'r') as f:
       objects = json.loads(f.read())
     # TODO: Load sprites?
     return objects
